@@ -90,8 +90,11 @@ tools/build-3ds-cia.sh              # dist/wacki.cia z dist/wacki
       miejsce na każdym poziomie, przytrzymanie palca nie „ucieka”.
 - [ ] Wygładzanie: domyślnie włączone; pierwszy przycisk Grafiki je
       wyłącza/włącza od razu; ustawienie zostaje po restarcie.
-- [ ] Stereo 3D: suwak włącza/wyłącza na żywo, głębia rośnie z suwakiem,
-      w menu obraz płaski (bez śmieci w prawym oku).
+- [ ] Stereo 3D (poprawione po teście): tło jest ZA ekranem, postacie,
+      panel, kursor i napisy na powierzchni ekranu; mocniej niż wcześniej
+      (18 px klatki przy pełnym suwaku ≈ 9 px na ekranie w 4:3 — do
+      zmiany: `-DSTEREO_MAX_DISPARITY_SRC_PX=…`); menu otwarte w grze
+      płaskie; bez kropek/dziur w postaciach.
 - [ ] Filmy (AVI/FLIC): płynne, dźwięk w synchronizacji; dolny ekran stoi.
 - [ ] `wacki_perf.log` powstaje, linie co 0,5 s, ostrzeżenia z `!`;
       porównać FPS/`engine`/`draw` z buildem `VIDEO_3DS=fb`.

@@ -117,8 +117,18 @@ static int s_prev_mouse_x = -1, s_prev_mouse_y = -1;
 static int s_prev_zoom_level = -1;
 static int s_prev_smooth = -1;
 
-#define STEREO_MAX_DISPARITY_SRC_PX  6   /* see video_3ds_gl.c */
+/* Stereo depth at full slider, in frame (640-wide) pixels: 18 → ~9 px on
+ * the top screen in 4:3, ~11 in stretch. (Was 6 → 3 px: barely visible.) */
+#ifndef STEREO_MAX_DISPARITY_SRC_PX
+#define STEREO_MAX_DISPARITY_SRC_PX  18
+#endif
+
+/* Sprite pixels that happen to have the background's colour at that spot
+ * would count as background; gaps up to this wide between foreground
+ * pixels on a row are filled so sprites don't get speckled holes. */
+#define STEREO_FG_GAP_FILL  3
 static int s_prev_stereo_enabled = -1;
+static int s_have_right = 0;   /* right-eye texture built this frame */
 static int s_prev_disparity_px   = -1;
 
 /* ---- GPU state ------------------------------------------------------- */
@@ -192,25 +202,44 @@ static void convert_frame(uint16_t *dst, const uint8_t *src, int w, int h)
     pad_edges(dst, w, h);
 }
 
-/* Right eye (stereo 3D): background unshifted, every foreground pixel
- * (where the frame differs from the clean background snapshot) shifted
- * by disparity_px — the same cut-out trick as video_3ds_gl.c's
- * blit_top_screen_stereo_right, now at the frame's own 640×480. */
+/* Right eye (stereo 3D). The scene's BACKGROUND goes behind the screen,
+ * everything drawn over it (characters, objects, the HUD panel, cursor,
+ * subtitles) stays on the screen's surface:
+ *   foreground pixel (frame differs from the clean background snapshot)
+ *     → shown unshifted, as in the left eye;
+ *   background pixel → the background layer shifted right by disparity_px
+ *     (uncrossed disparity = farther away).
+ * The background snapshot is a complete layer, so shifting it never shows
+ * holes behind the characters. (The old version shifted the foreground
+ * the other way, which pushed the characters BEHIND the background —
+ * depth that fights the picture's own overlap, so it looked unclear.) */
 static void convert_frame_stereo_right(uint16_t *dst, const uint8_t *src,
                                        const uint8_t *bg, int w, int h,
                                        int disparity_px)
 {
     const uint16_t *lut = s_palette_lut;
+    static uint8_t  fg[TEX_W];
     for (int y = 0; y < h; ++y) {
         const uint8_t *row    = src + (size_t)y * w;
         const uint8_t *bg_row = bg  + (size_t)y * w;
         uint16_t      *d      = dst + (size_t)y * TEX_W;
+
+        int last = -1000;
         for (int x = 0; x < w; ++x) {
-            int     sh = x - disparity_px;
-            uint8_t v;
-            if (sh >= 0 && sh < w && row[sh] != bg_row[sh]) v = row[sh];
-            else                                            v = bg_row[x];
-            d[x] = lut[v];
+            fg[x] = row[x] != bg_row[x];
+            if (fg[x]) {
+                if (x - last > 1 && x - last - 1 <= STEREO_FG_GAP_FILL)
+                    memset(fg + last + 1, 1, (size_t)(x - last - 1));
+                last = x;
+            }
+        }
+        for (int x = 0; x < w; ++x) {
+            if (fg[x]) {
+                d[x] = lut[row[x]];
+            } else {
+                int sx = x - disparity_px;
+                d[x] = lut[bg_row[sx < 0 ? 0 : sx]];
+            }
         }
     }
     pad_edges(dst, w, h);
@@ -633,11 +662,18 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
         build_palette_lut(pal);
         convert_frame(s_stage[0], shadow, w, h);
         upload_texture(0, h);
+        s_have_right = 0;
         if (stereo_enabled && g_bg_layer_valid && g_bg_layer_shadow) {
             convert_frame_stereo_right(s_stage[1], shadow, g_bg_layer_shadow,
                                        w, h, disparity_px_now);
             upload_texture(1, h);
+            s_have_right = 1;
         }
+        /* Used up: the next gameplay frame takes a new snapshot
+         * (frame_tick.c). Screens that paint and present on their own
+         * (menus, Grafika over a paused scene) then stay flat instead of
+         * getting depth from an old scene's background. */
+        g_bg_layer_valid = 0;
     }
 
     extern char g_aspect_mode[16];
@@ -656,9 +692,8 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
         if (stereo_enabled) {
             /* Without a background snapshot this frame (menus paint and
              * present directly), both eyes get the same flat picture. */
-            int have_r = g_bg_layer_valid && g_bg_layer_shadow;
             draw_on(s_rt_top[1], TOP_WIDTH, TOP_HEIGHT,
-                    have_r ? &s_tex[1] : &s_tex[0], QUAD_TOP_R);
+                    s_have_right ? &s_tex[1] : &s_tex[0], QUAD_TOP_R);
         }
         s_prev_disparity_px = disparity_px_now;
     }
