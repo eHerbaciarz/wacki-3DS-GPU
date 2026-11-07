@@ -55,6 +55,16 @@ efekt oświetlenia; zmiana działa od razu i zapisuje się z opcjami.
   na 3DS szacunkowo ~10 ms) — sprawdzić `draw` w `wacki_perf.log`.
 - **SELECT sam** dalej przełącza tryb ramion (L/ZL ↔ R/ZR), ale teraz po
   puszczeniu i tylko gdy nie użyto kombinacji.
+- **Inne platformy** (kolory działają wszędzie):
+
+  | | kolory | napisy | dla niesłyszących |
+  |---|---|---|---|
+  | 3DS | SELECT+Y | menu Solund | menu Solund (5. przycisk) |
+  | Vita | SELECT | menu Solund | menu Solund |
+  | Switch | − + X | menu Solund | menu Solund |
+  | PC | F1 | F2 | F4 |
+
+  Switch: samo „−” dalej zmienia tryb dotyku (po puszczeniu, bez kombinacji).
 
 ## Log wydajności
 

@@ -203,6 +203,31 @@ static void solund_sdh_hint(uint32_t ms)
     SubtitlesHint(msg, ms);
 }
 
+/* Keys / buttons outside the menu (PC F2/F4, …): the same switches as
+ * the Solund buttons, kept in step with them, saved, with a hint. */
+void OptionsToggleSubtitles(void)
+{
+    s_opt_subtitles ^= 1;
+    g_subtitles_on = s_opt_subtitles;
+    persist_audio_opts();
+    char msg[120];
+    int  n = snprintf(msg, sizeof msg, "Napisy: %s",
+                      s_opt_subtitles ? "w\xC5\x82\xC4\x85""czone" : "wy\xC5\x82\xC4\x85""czone");
+    if (s_opt_subtitles && !SubtitlesLoaded() && n > 0 && (size_t)n < sizeof msg)
+        snprintf(msg + n, sizeof msg - (size_t)n, "|(brak pliku napisy/%s.txt)",
+                 g_subtitles_lang[0] ? g_subtitles_lang : "pl");
+    SubtitlesHint(msg, 2000);
+}
+
+void OptionsToggleSdh(void)
+{
+    s_opt_extra = SubtitlesSdhActive() ? 0 : 1;
+    g_subtitles_speakers = s_opt_extra;
+    g_subtitles_sounds   = s_opt_extra;
+    ConfigSave();
+    solund_sdh_hint(2000);
+}
+
 static int SolundClick(int trigger)
 {
     int toggled = 1;

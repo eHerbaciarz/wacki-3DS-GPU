@@ -53,6 +53,8 @@ int platform_pad_handle_event(const SDL_Event *ev)
         case SDL_CONTROLLER_BUTTON_Y:             platform_video_toggle_aspect_mode(); break;
         case SDL_CONTROLLER_BUTTON_X:             platform_touch_cycle_mode();         break;
         case SDL_CONTROLLER_BUTTON_START:         g_pause_menu_request = 1; break;
+        /* SELECT (unused before) = colour filter, with a hint */
+        case SDL_CONTROLLER_BUTTON_BACK:          ColorFilterCycle();               break;
         case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:  g_quickload_request  = 1; break;
         case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: g_quicksave_request  = 1; break;
         default: return 0;

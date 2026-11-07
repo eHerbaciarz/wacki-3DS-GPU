@@ -49,10 +49,28 @@ void platform_pad_open(void)
     }
 }
 
+/* MINUS is a modifier: MINUS + X (physical, SDL Y) = colour filter;
+ * MINUS on its own still cycles the touch mode — on release, when no
+ * combo was used (same idea as SELECT on the 3DS). */
+static int s_minus_combo = 0;
+
 int platform_pad_handle_event(const SDL_Event *ev)
 {
+    int minus_held = s_pad &&
+        SDL_GameControllerGetButton(s_pad, SDL_CONTROLLER_BUTTON_BACK);
     switch (ev->type) {
+    case SDL_CONTROLLERBUTTONUP:
+        if (ev->cbutton.button == SDL_CONTROLLER_BUTTON_BACK) {
+            if (!s_minus_combo) platform_touch_cycle_mode();
+            return 1;
+        }
+        return 0;
     case SDL_CONTROLLERBUTTONDOWN:
+        if (ev->cbutton.button == SDL_CONTROLLER_BUTTON_Y && minus_held) {
+            ColorFilterCycle();
+            s_minus_combo = 1;
+            return 1;
+        }
         switch (ev->cbutton.button) {
         /* physical A = east position = SDL B */
         case SDL_CONTROLLER_BUTTON_B:             g_lmb_clicked        = 1; break;
@@ -60,8 +78,8 @@ int platform_pad_handle_event(const SDL_Event *ev)
         case SDL_CONTROLLER_BUTTON_A:             g_rmb_clicked        = 1; break;
         /* physical X = north position = SDL Y → aspect mode */
         case SDL_CONTROLLER_BUTTON_Y:             platform_video_toggle_aspect_mode(); break;
-        /* MINUS = SDL BACK → cycle touch mode */
-        case SDL_CONTROLLER_BUTTON_BACK:          platform_touch_cycle_mode();         break;
+        /* MINUS = SDL BACK → modifier; touch mode on release (above) */
+        case SDL_CONTROLLER_BUTTON_BACK:          s_minus_combo = 0;                   break;
         /* PLUS = SDL START → pause */
         case SDL_CONTROLLER_BUTTON_START:         g_pause_menu_request = 1; break;
         case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:  g_quickload_request  = 1; break;

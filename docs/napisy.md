@@ -11,7 +11,8 @@ są rysowane we wspólnym kodzie, przed wysłaniem klatki na ekran).
 
 ## W grze
 
-- **Włączanie:** opcja „napisy” w menu dźwięku (Solund) — ta sama co w oryginale.
+- **Włączanie:** opcja „napisy” w menu dźwięku (Solund) — ta sama co w
+  oryginale; na PC też **F2** (a **F4** = napisy dla niesłyszących).
 - **Napisy dla niesłyszących** (imiona mówców + opisy dźwięków): piąty
   przycisk w menu Solund (w oryginale jego znaczenie jest nieznane, port go
   nie używał). Ma oryginalną ikonę, więc po najechaniu kursorem u góry

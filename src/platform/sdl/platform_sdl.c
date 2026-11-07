@@ -150,6 +150,12 @@ static void handle_keydown(const SDL_Event *ev)
 #ifndef WACKI_PS2
     if (sym == SDLK_F10) platform_video_toggle_aspect_mode();
     if (sym == SDLK_F8)  platform_touch_cycle_mode();
+    /* Filters / subtitles (each shows its state at the top of the
+     * screen and is saved): F1 colours, F2 subtitles, F4 captions for
+     * the deaf (speaker names + sound descriptions). */
+    if (sym == SDLK_F1)  ColorFilterCycle();
+    if (sym == SDLK_F2)  OptionsToggleSubtitles();
+    if (sym == SDLK_F4)  OptionsToggleSdh();
 #endif
     if (sym == SDLK_TAB) g_rmb_clicked = 1;
     if (sym == SDLK_BACKSPACE) PlatformPushTypedChar(ASCII_BACKSPACE);
@@ -410,6 +416,7 @@ void PlatformPumpEvents(void)
             break;
 
         case SDL_CONTROLLERBUTTONDOWN:
+        case SDL_CONTROLLERBUTTONUP:      /* Switch: MINUS acts on release */
         case SDL_CONTROLLERDEVICEADDED:
         case SDL_CONTROLLERDEVICEREMOVED:
             platform_pad_handle_event(&ev);
