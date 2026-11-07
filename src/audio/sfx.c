@@ -678,6 +678,9 @@ int PlaySfxPannedAndGetChannel(const char *wav_name,
                                uint8_t gain_l, uint8_t gain_r)
 {
     if (!wav_name) return -1;
+    /* Sound caption for the deaf (napisy [dzwieki]) — before the sound
+     * gates on purpose: shown even with the sound off. */
+    SubtitlesSound(wav_name);
     if (!g_audio_sfx_enabled || !g_audio_sound_enabled) return -1;
     if (!mixer_ensure_open()) return -1;
 

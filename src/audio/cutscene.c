@@ -39,12 +39,22 @@ int InitializeDirectSound(void) { return 0; }
 /* Try to open `name` relative to `root`; on macOS auto-uppercase the
  * basename on the second pass so case-sensitive filesystems find files
  * the original installer wrote in upper-case. */
+/* PlayFlicAviFile with the film's subtitles (napisy [film NAME]) timed
+ * from the start of playback. */
+static int play_with_subtitles(const char *p)
+{
+    SubtitlesFilmBegin(p);
+    int ok = PlayFlicAviFile(p);
+    SubtitlesFilmEnd();
+    return ok;
+}
+
 static int try_play_at(const char *root, const char *name)
 {
     char p[1024];
     if (root && *root) snprintf(p, sizeof p, "%s/%s", root, name);
     else               snprintf(p, sizeof p, "%s", name);
-    if (PlayFlicAviFile(p)) return 1;
+    if (play_with_subtitles(p)) return 1;
 
     /* Uppercase the last path component. */
     size_t l = strlen(p);
@@ -53,7 +63,7 @@ static int try_play_at(const char *root, const char *name)
     for (size_t j = i; j < l; ++j) {
         if (p[j] >= 'a' && p[j] <= 'z') p[j] &= 0xDF;
     }
-    return PlayFlicAviFile(p);
+    return play_with_subtitles(p);
 }
 
 void PlaySceneCutsceneAvi(const char *avi_name)

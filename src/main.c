@@ -448,6 +448,9 @@ int WackiMain(int argc, char **argv)
              WACKI_VERSION);
     LOG_INFO("wacki", "data source: %s", g_data_root);
 
+    /* napisy/<lang>.txt next to the data (src/text/subtitles.c). */
+    SubtitlesInit();
+
     /* WACKI.EXE's .rdata + .data sections are linked into the binary
      * (see include/wacki/embedded_exe.h); PeLoaderRead resolves
      * against them with no runtime init. */

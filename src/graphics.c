@@ -304,8 +304,12 @@ void FlushFrameToPrimary(void)
 {
     if (g_present_suppressed) return;   /* mid-load: don't present partial frames */
     ensure_shadow();
-    if (g_back_shadow)
-        PlatformPresent(g_back_shadow, g_palette_rgb, g_screen_w, g_screen_h);
+    if (g_back_shadow) {
+        /* Captions (napisy) go on a copy — see src/text/subtitles.c. */
+        const uint8_t *frame = SubtitlesComposeFrame(g_back_shadow, g_palette_rgb,
+                                                     g_screen_w, g_screen_h);
+        PlatformPresent(frame, g_palette_rgb, g_screen_w, g_screen_h);
+    }
     s_dirty_this_count = 0;
 }
 

@@ -255,6 +255,14 @@ advance:
     t->x = (uint16_t)(x < 0 ? 0 : x);
 }
 
+/* Line (cell) height of a font in pixels — the rows RenderTextLineToBuffer
+ * writes per line. Used by src/text/subtitles.c. */
+int FontCellHeight(FontHandle *f)
+{
+    if (!f) return 0;
+    return f->baseline ? f->baseline : FUTURA_30_CELL_HEIGHT;
+}
+
 /* ---- MeasureTextLine --------------------------------------------- *
  *
  * Returns pixel width of `text` rendered with `font`. Used by op 0x09

@@ -354,3 +354,8 @@ void vm_stubs_reset(void)
      * leaking into the next test's FindEntityByVerbId calls. */
     EntityListClearAll();
 }
+
+/* src/text/subtitles.c reads these; their owners (main.c, flic.c) are not
+ * part of the test build. */
+char g_data_root[260]   = "";
+int  g_cutscene_playing = 0;

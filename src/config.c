@@ -6,6 +6,9 @@
  * Dodane klucze:
  *   aspect_mode=stretch|4:3   — tryb proporcji ekranu
  *   touch_mode=absolute|relative|off — tryb ekranu dotykowego
+ *   subtitles_lang=pl            — plik napisy/<lang>.txt (src/text/subtitles.c)
+ *   subtitles_speakers=-1|0|1    — imiona mówców (-1 = jak w pliku)
+ *   subtitles_sounds=-1|0|1      — opisy dźwięków dla niesłyszących
  *
  * g_aspect_mode i g_touch_mode są zdefiniowane tutaj (nie w video_sdl.c /
  * platform_sdl.c) aby były dostępne dla WSZYSTKICH targetów przez linkowanie
@@ -21,6 +24,9 @@
 
 extern int  g_scale_factor;
 extern int  g_fullscreen;
+extern char g_subtitles_lang[16];   /* text/subtitles.c */
+extern int  g_subtitles_speakers;
+extern int  g_subtitles_sounds;
 
 /* Zdefiniowane tutaj — dostępne dla wszystkich targetów. */
 char g_aspect_mode[16] = "stretch";
@@ -65,6 +71,14 @@ void ConfigLoad(void)
             g_scale_factor = v;
         else if (sscanf(line,"aspect_mode=%15s",sv)==1) normalize_aspect(sv);
         else if (sscanf(line,"touch_mode=%15s",sv)==1)  normalize_touch(sv);
+        else if (sscanf(line,"subtitles_lang=%15s",sv)==1) {
+            strncpy(g_subtitles_lang, sv, 15);
+            g_subtitles_lang[15] = '\0';
+        }
+        else if (sscanf(line,"subtitles_speakers=%d",&v)==1)
+            g_subtitles_speakers = v < 0 ? -1 : (v ? 1 : 0);
+        else if (sscanf(line,"subtitles_sounds=%d",&v)==1)
+            g_subtitles_sounds = v < 0 ? -1 : (v ? 1 : 0);
     }
     fclose(fp);
     LOG_INFO("config","loaded: fullscreen=%d scale=%d aspect=%s touch=%s",
@@ -82,6 +96,11 @@ void ConfigSave(void)
     fprintf(fp,"aspect_mode=%s\n", g_aspect_mode[0]?g_aspect_mode:"stretch");
     fprintf(fp,"# touch_mode: absolute | relative | off\n");
     fprintf(fp,"touch_mode=%s\n",  g_touch_mode[0]?g_touch_mode:"absolute");
+    fprintf(fp,"# napisy: plik napisy/<subtitles_lang>.txt obok danych gry\n");
+    fprintf(fp,"subtitles_lang=%s\n", g_subtitles_lang[0]?g_subtitles_lang:"pl");
+    fprintf(fp,"# imiona mowcow / opisy dzwiekow: 1 tak, 0 nie, -1 jak w pliku napisow\n");
+    fprintf(fp,"subtitles_speakers=%d\n", g_subtitles_speakers);
+    fprintf(fp,"subtitles_sounds=%d\n",   g_subtitles_sounds);
     fclose(fp);
     LOG_INFO("config","saved: fullscreen=%d scale=%d aspect=%s touch=%s",
              g_fullscreen,g_scale_factor?g_scale_factor:1,g_aspect_mode,g_touch_mode);

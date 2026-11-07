@@ -234,6 +234,23 @@ uint32_t AlphaTintForListener(int16_t lx, int16_t ly);
  * also reads it every frame as "smoothing on" (linear filtering). */
 int      GraphicsAlphaFxEnabled(void);
 
+/* ---- text/subtitles.c: napisy (dialogue / sounds / films) --------- *
+ * See the top of src/text/subtitles.c for the file format. */
+void           SubtitlesInit(void);             /* load napisy/<lang>.txt */
+void           SubtitlesUnload(void);
+int            SubtitlesLoadBuffer(const char *utf8, size_t len);
+size_t         SubtitlesUtf8ToFont(const char *s, size_t n, char *out, size_t cap);
+/* A dialogue line starts: returns its reading time in ms when a caption
+ * is shown (0 = none). SubtitlesDialogEnd when the line is over. */
+uint32_t       SubtitlesDialogLine(const char *wav, char speaker_tag);
+void           SubtitlesDialogEnd(void);
+void           SubtitlesSound(const char *wav);  /* caption for the deaf */
+void           SubtitlesFilmBegin(const char *path);
+void           SubtitlesFilmEnd(void);
+/* The frame to show: `shadow` itself, or a copy with the captions on it. */
+const uint8_t *SubtitlesComposeFrame(const uint8_t *shadow, const uint8_t *pal,
+                                     int w, int h);
+
 /* ---- archive.c / depack.c ---------------------------------------- */
 
 int  OpenDtaArchiveFile(const char *path);
@@ -330,6 +347,7 @@ void ApplySavedSettings(void);
 
 FontHandle *ParseFutFontFile(const uint8_t *raw);
 int         MeasureTextLine(FontHandle *f, const uint8_t *text);
+int         FontCellHeight(FontHandle *f);   /* line height in px (Futura.30: 30) */
 void        RenderTextLineToBuffer(TextRenderTarget *t, const uint8_t *text);
 uint16_t    FindKeyInTaggedTable(const char *table, char tag, int16_t key);
 

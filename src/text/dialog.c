@@ -267,13 +267,20 @@ static void DialogRestoreTopSpeaker(void);
  * `fj_gut04` → wav `fjgut04a.wav`), so the .wav is now taken straight
  * from the [sampl] tag. */
 static void dialog_play_line(uint16_t actor, const char *text,
-                             const char *wav_name)
+                             const char *wav_name, char speaker)
 {
     int has_text  = text     && *text;
     int has_audio = wav_name && *wav_name;
     if (!has_text && !has_audio) return;
 
     if (has_text) ScriptCallShowText(actor, text);
+
+    /* napisy (src/text/subtitles.c): the line's text from the subtitle
+     * file, shown at the bottom while the line plays. sub_ms = reading
+     * time, used when there is no audio to time the line (voice off —
+     * e.g. a deaf player): the line then stays until read or clicked. */
+    uint32_t sub_ms    = has_audio ? SubtitlesDialogLine(wav_name, speaker) : 0;
+    uint32_t sub_start = SDL_GetTicks();
 
     int audio_started = 0;
     if (has_audio) {
@@ -294,9 +301,14 @@ static void dialog_play_line(uint16_t actor, const char *text,
                                     : DIALOG_TEXT_FRAME_BUDGET;
     int audio_grace = audio_started ? DIALOG_AUDIO_GRACE_FRAMES : 0;
 
+    int sub_wait = sub_ms && !audio_started;    /* text-only subtitle line */
+    if (sub_wait && safety < DIALOG_AUDIO_FRAME_BUDGET) safety = DIALOG_AUDIO_FRAME_BUDGET;
+
     while (safety-- > 0) {
         if (has_text && !g_speech_balloon) break;
-        if (!has_text && audio_grace == 0 && !IsDialogLinePlaying()) break;
+        if (sub_wait) {
+            if (SDL_GetTicks() - sub_start >= sub_ms) break;
+        } else if (!has_text && audio_grace == 0 && !IsDialogLinePlaying()) break;
         if (audio_grace > 0) --audio_grace;
 
         ProcessGameFrameTick();
@@ -320,6 +332,7 @@ static void dialog_play_line(uint16_t actor, const char *text,
         }
         EnginePaceFrame(DIALOG_FRAME_DELAY_MS);
     }
+    SubtitlesDialogEnd();
     /* Flip atlas back to the speaker's original pose so they don't
      * stay frozen in talking-head form between lines. */
     DialogRestoreTopSpeaker();
@@ -483,9 +496,8 @@ static void dialog_play_section_lines(uint16_t actor,
          * and the speech balloon centres on screen rather than over
          * the speaker. Future: pull it from the stack-top entity's
          * click payload. */
-        (void)speaker;
         LOG_TRACE("dialog", "line %d wav='%s' speaker=%c text='%s'", i + 1, wav[0] ? wav : "(none)", speaker ? speaker : '-', text[0] ? text : "(none)");
-        dialog_play_line(actor, text, wav);
+        dialog_play_line(actor, text, wav, speaker);
         ++played;
     }
     LOG_TRACE("dialog", "section '%s' played %d sampl blocks", section_name, played);

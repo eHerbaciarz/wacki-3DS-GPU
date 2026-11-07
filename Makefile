@@ -119,7 +119,7 @@ ENGINE_SRCS = \
 	src/audio/sound_queue.c   src/audio/cutscene.c                \
 	src/audio/sfx.c           src/audio/music_stream.c           \
 	src/script_bridge/palette.c src/script_bridge/entity.c        \
-	src/text/balloon.c src/text/dialog.c                          \
+	src/text/balloon.c src/text/dialog.c src/text/subtitles.c     \
 	src/anim/resolver.c src/util/screenshot.c                     \
 	src/anim/paint_primitives.c src/anim/alpha_blit.c             \
 	src/menu/chapter_select.c src/menu/slot_picker.c                 \
@@ -231,7 +231,7 @@ TEST_SRCS = \
 	tests/test_click_queue.c       tests/test_update_registration.c \
 	tests/test_ent_ptr_intern.c    tests/test_sampl_parser.c   \
 	tests/test_komnata_load.c      tests/test_flic_decoder.c   \
-	tests/test_engine_stubs.c
+	tests/test_engine_stubs.c      tests/test_subtitles.c
 
 TEST_ENGINE_SRCS = \
 	tests/embedded_wacki_pe_stub.c                 \
@@ -248,7 +248,7 @@ TEST_ENGINE_SRCS = \
 	src/scene/bg_mask.c src/scene/spawn.c src/scene/komnata.c     \
 	src/audio/sound_queue.c   src/audio/sfx.c                    \
 	src/script_bridge/palette.c src/script_bridge/entity.c        \
-	src/text/balloon.c src/text/dialog.c                          \
+	src/text/balloon.c src/text/dialog.c src/text/subtitles.c     \
 	src/anim/resolver.c                                           \
 	src/stubs.c     src/actor/intern.c    src/actor/registration.c \
 	src/actor/list.c src/actor/vm.c \
