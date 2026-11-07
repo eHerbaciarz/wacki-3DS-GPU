@@ -19,7 +19,9 @@
  *   3. One textured quad per screen:
  *        top    — 4:3: the frame in a centred 320×240 window with black
  *                 bars (exact 2:1, so smoothing = a clean 2×2 average);
- *                 stretch: the full 400×240;
+ *                 "stretch" = FILL: full 400 width, proportions kept,
+ *                 384 of 480 rows shown, the window following the
+ *                 cursor (see s_fill_y);
  *        bottom — the zoom view: a part of the SAME texture (1×/2×/4×
  *                 around the cursor, or the whole frame), no second copy.
  *      Stereo 3D (slider open): a second texture with the right eye's
@@ -127,6 +129,17 @@ static int s_prev_smooth = -1;
  * would count as background; gaps up to this wide between foreground
  * pixels on a row are filled so sprites don't get speckled holes. */
 #define STEREO_FG_GAP_FILL  3
+/* "stretch" on the 3DS = FILL: the frame keeps its proportions, fills the
+ * 400-px width (scale 0.625) and the 384 of 480 rows that fit are shown —
+ * a window that follows the cursor up and down. It rests at the bottom
+ * (HUD panel visible, the scene's top — usually sky — cut off) and slides
+ * up when the cursor goes into the hidden part, so nothing clickable is
+ * gone for good. Films: centred. Only the texture coordinates move: no
+ * frame conversion for a pan. */
+#define FILL_MARGIN_SRC  64      /* keep the cursor this far from the edge */
+#define FILL_STEP_SRC     8      /* pan speed, frame rows per present      */
+static float s_fill_y = -1.0f;   /* top row of the window; -1 = not yet    */
+
 static int s_prev_stereo_enabled = -1;
 static int s_have_right = 0;   /* right-eye texture built this frame */
 static int s_prev_disparity_px   = -1;
@@ -470,7 +483,8 @@ void platform_video_toggle_aspect_mode(void)
         strncpy(g_aspect_mode, "4:3", 15);
     g_aspect_mode[15] = '\0';
     s_have_prev_frame = 0; /* full redraw next frame */
-    LOG_INFO("3ds", "aspect_mode=%s", g_aspect_mode);
+    s_fill_y = -1.0f;      /* fill window back to its resting place */
+    LOG_INFO("3ds", "aspect_mode=%s (3DS: stretch = fill, cropped)", g_aspect_mode);
 }
 
 void plat_video_message_box(const char *title, const char *body)
@@ -485,7 +499,7 @@ static void update_state_note(int smooth, int stereo)
     char note[96];
     int  zoom = ZOOM_LEVELS[g_zoom_level];
     snprintf(note, sizeof note, "gpu smooth=%d aspect=%s zoom=%s%s", smooth,
-             g_aspect_mode[0] == '4' ? "4:3" : "stretch",
+             g_aspect_mode[0] == '4' ? "4:3" : "fill",
              zoom == 1 ? "1x" : zoom == 2 ? "2x" : zoom == 4 ? "4x" : "full",
              stereo ? " 3d" : "");
     perf_log_set_state(note);
@@ -600,7 +614,35 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
     }
 
 
-    if (!top_dirty && !bot_dirty) {
+    /* ---- fill mode: where the 384-row window sits ------------------ */
+    extern char g_aspect_mode[16];
+    int   use_43     = (g_aspect_mode[0] == '4');
+    int   fill_h     = (w * TOP_HEIGHT + TOP_WIDTH / 2) / TOP_WIDTH;   /* 384 */
+    float fill_max   = (float)(h - fill_h > 0 ? h - fill_h : 0);
+    int   pan_dirty  = 0;
+    if (!use_43) {
+        float target;
+        if (s_fill_y < 0.0f) s_fill_y = fill_max;
+        if (g_cutscene_playing) {
+            target = fill_max * 0.5f;
+        } else {
+            float my = (float)g_mouse_y;
+            target = s_fill_y;
+            if (my < s_fill_y + FILL_MARGIN_SRC)
+                target = my - FILL_MARGIN_SRC;
+            else if (my > s_fill_y + fill_h - FILL_MARGIN_SRC)
+                target = my - (float)fill_h + FILL_MARGIN_SRC;
+            if (target < 0.0f) target = 0.0f;
+            if (target > fill_max) target = fill_max;
+        }
+        float ny = s_fill_y;
+        if (target > ny) ny = (target - ny > FILL_STEP_SRC) ? ny + FILL_STEP_SRC : target;
+        if (target < ny) ny = (ny - target > FILL_STEP_SRC) ? ny - FILL_STEP_SRC : target;
+        if (ny != s_fill_y) { s_fill_y = ny; pan_dirty = 1; }
+    }
+    int top_redraw = top_dirty || pan_dirty;     /* top_dirty = new content */
+
+    if (!top_redraw && !bot_dirty) {
         perf_log_present(0, 0, 0, 0.0f);
         return;
     }
@@ -676,18 +718,18 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
         g_bg_layer_valid = 0;
     }
 
-    extern char g_aspect_mode[16];
-    int use_43 = (g_aspect_mode[0] == '4');
     float tx0 = use_43 ? (float)TOP_43_X : 0.0f;
     float tx1 = use_43 ? (float)(TOP_43_X + TOP_43_W) : (float)TOP_WIDTH;
-    set_quad(QUAD_TOP_L, tx0, 0.0f, tx1, (float)TOP_HEIGHT, 0.0f, 0.0f, (float)w, (float)h);
-    set_quad(QUAD_TOP_R, tx0, 0.0f, tx1, (float)TOP_HEIGHT, 0.0f, 0.0f, (float)w, (float)h);
+    float sy0 = use_43 ? 0.0f : s_fill_y;
+    float sy1 = use_43 ? (float)h : s_fill_y + (float)fill_h;
+    set_quad(QUAD_TOP_L, tx0, 0.0f, tx1, (float)TOP_HEIGHT, 0.0f, sy0, (float)w, sy1);
+    set_quad(QUAD_TOP_R, tx0, 0.0f, tx1, (float)TOP_HEIGHT, 0.0f, sy0, (float)w, sy1);
     set_quad(QUAD_BOT, 0.0f, 0.0f, (float)BOT_WIDTH, (float)BOT_HEIGHT,
              (float)src_x, (float)src_y,
              (float)(src_x + src_region_w), (float)(src_y + src_region_h));
     GSPGPU_FlushDataCache(s_vbuf, sizeof(Vtx) * QUAD_COUNT * 4);
 
-    if (top_dirty) {
+    if (top_redraw) {
         draw_on(s_rt_top[0], TOP_WIDTH, TOP_HEIGHT, &s_tex[0], QUAD_TOP_L);
         if (stereo_enabled) {
             /* Without a background snapshot this frame (menus paint and
