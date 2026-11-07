@@ -135,7 +135,9 @@ Klawiatura w pętli głównej:
 - `F5` → `QuickSaveToSlot(0)`
 - `F9` → `QuickLoadFromSlot(0)`
 - `F12` → menu pauzy
-- `F3` → stats dump (debug build)
+- `F10` → play statistics, on screen + log (was F3); `F1` colours,
+  `F2` subtitles, `F3` smoothing, `F4` captions for the deaf,
+  `F7` aspect 4:3 / stretch (was F10)
 
 Frame pacing: `EnginePaceFrame(target_ms)` z `src/timer.c` to
 deadline-aware sleep — śpi tylko `target_ms - work_ms`, nigdy nie

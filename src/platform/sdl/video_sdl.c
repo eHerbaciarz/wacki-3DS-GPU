@@ -129,6 +129,12 @@ int plat_video_init(int w, int h, const char *title)
     s_tex = SDL_CreateTexture(s_ren, SDL_PIXELFORMAT_ARGB8888,
                               SDL_TEXTUREACCESS_STREAMING, w, h);
     if (!s_tex) { LOG_INFO("log", "SDL_CreateTexture: %s", SDL_GetError()); return 0; }
+    {
+        extern int g_smoothing;
+        if (g_smoothing >= 0)              /* wacki.cfg smoothing= (F3) wins */
+            SDL_SetTextureScaleMode(s_tex, g_smoothing ? SDL_ScaleModeLinear
+                                                       : SDL_ScaleModeNearest);
+    }
 
     extern unsigned char wacki_icon_bmp[];
     extern unsigned int  wacki_icon_bmp_len;
@@ -244,6 +250,36 @@ void plat_video_shutdown(void)
     if (s_tex) { SDL_DestroyTexture(s_tex);  s_tex = NULL; }
     if (s_ren) { SDL_DestroyRenderer(s_ren); s_ren = NULL; }
     if (s_win) { SDL_DestroyWindow(s_win);   s_win = NULL; }
+}
+
+extern int g_smoothing;                   /* config.c (wacki.cfg smoothing=) */
+
+static void apply_smoothing_setting(void)
+{
+#ifndef WACKI_SWITCH
+    if (!s_tex || g_smoothing < 0) return;   /* -1: as --scale-mode set it */
+    SDL_SetTextureScaleMode(s_tex, g_smoothing ? SDL_ScaleModeLinear
+                                               : SDL_ScaleModeNearest);
+#endif
+}
+
+void plat_video_toggle_smoothing(void)
+{
+#ifdef WACKI_SWITCH
+    SubtitlesHint("Wyg\xC5\x82""adzanie: pierwszy przycisk w menu Grafika", 2500);
+#else
+    if (g_smoothing < 0) {   /* first press: start from what is in effect */
+        SDL_ScaleMode m = SDL_ScaleModeNearest;
+        if (s_tex) SDL_GetTextureScaleMode(s_tex, &m);
+        g_smoothing = (m != SDL_ScaleModeNearest);
+    }
+    g_smoothing = !g_smoothing;
+    apply_smoothing_setting();
+    extern void ConfigSave(void);
+    ConfigSave();
+    SubtitlesHint(g_smoothing ? "Wyg\xC5\x82""adzanie: w\xC5\x82\xC4\x85""czone"
+                              : "Wyg\xC5\x82""adzanie: wy\xC5\x82\xC4\x85""czone", 1500);
+#endif
 }
 
 void plat_video_toggle_fullscreen(void)

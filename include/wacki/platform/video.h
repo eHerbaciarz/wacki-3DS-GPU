@@ -43,6 +43,12 @@ void plat_video_shutdown(void);
  * where there's no windowing to toggle (handheld / PS2). */
 void plat_video_toggle_fullscreen(void);
 
+/* Smoothing (linear filtering of the scaled-up frame) on/off at runtime,
+ * saved in wacki.cfg (smoothing=), with an on-screen hint. PC: F3. Where
+ * smoothing follows the Grafika menu's first button (Switch, Vita, 3DS)
+ * this only says so. */
+void plat_video_toggle_smoothing(void);
+
 /* Show a native message box parented to the game window. A no-op where there
  * is no SDL display (PS2); the headless-mode logging path is handled by the
  * caller before this is reached. */

@@ -141,6 +141,15 @@ Pełny przewodnik (3 sposoby, w tym uwaga o macOS 15 Sequoia):
 | Menu pauzy            | `F12`                |
 | Przełącz postać       | `SPACE`              |
 | Pełny ekran           | `F11`                |
+| Kolory (filtr)        | `F1`                 |
+| Napisy wł./wył.       | `F2`                 |
+| Wygładzanie obrazu    | `F3`                 |
+| Napisy dla niesłyszących | `F4`              |
+| Proporcje 4:3 / pełne | `F7`                 |
+| Statystyki gry        | `F10`                |
+
+`F1`–`F4` pokazują nowy stan u góry ekranu i zapamiętują go w `wacki.cfg`.
+Kolory: oryginalne → żywe → bardzo żywe → jaśniejsze.
 
 ### Tryb wyświetlania
 

@@ -11,6 +11,7 @@
  *   subtitles_sounds=-1|0|1      — opisy dźwięków dla niesłyszących
  *   color_filter=-1..3           — filtr kolorów (util/color_filter.c)
  *   zoom_filter=-1..4            — filtr zoomu dolnego ekranu 3DS
+ *   smoothing=-1|0|1             — PC: wygładzanie obrazu (F3)
  *
  * g_aspect_mode i g_touch_mode są zdefiniowane tutaj (nie w video_sdl.c /
  * platform_sdl.c) aby były dostępne dla WSZYSTKICH targetów przez linkowanie
@@ -30,6 +31,7 @@ extern char g_subtitles_lang[16];   /* text/subtitles.c */
 extern int  g_subtitles_speakers;
 extern int  g_subtitles_sounds;
 int         g_zoom_filter = -1;     /* 3DS bottom-screen zoom; -1 = default */
+int         g_smoothing   = -1;     /* PC smoothing: -1 = --scale-mode / default */
 
 /* Zdefiniowane tutaj — dostępne dla wszystkich targetów. */
 char g_aspect_mode[16] = "stretch";
@@ -86,6 +88,8 @@ void ConfigLoad(void)
             g_color_filter = (v >= 0 && v < COLOR_FILTER_COUNT) ? v : -1;
         else if (sscanf(line,"zoom_filter=%d",&v)==1)
             g_zoom_filter = (v >= 0 && v < 5) ? v : -1;
+        else if (sscanf(line,"smoothing=%d",&v)==1)
+            g_smoothing = v < 0 ? -1 : (v ? 1 : 0);
     }
     fclose(fp);
     LOG_INFO("config","loaded: fullscreen=%d scale=%d aspect=%s touch=%s",
@@ -112,6 +116,8 @@ void ConfigSave(void)
     fprintf(fp,"color_filter=%d\n", g_color_filter);
     fprintf(fp,"# 3DS zoom na dolnym ekranie: 0 ostry, 1 gladki, 2 Scale2x, 3 2xSaI, 4 xBR\n");
     fprintf(fp,"zoom_filter=%d\n", g_zoom_filter);
+    fprintf(fp,"# PC: wygladzanie obrazu (F3): 1 tak, 0 nie, -1 domyslne\n");
+    fprintf(fp,"smoothing=%d\n", g_smoothing);
     fclose(fp);
     LOG_INFO("config","saved: fullscreen=%d scale=%d aspect=%s touch=%s",
              g_fullscreen,g_scale_factor?g_scale_factor:1,g_aspect_mode,g_touch_mode);

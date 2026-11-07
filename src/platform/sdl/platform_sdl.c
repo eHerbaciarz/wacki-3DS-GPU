@@ -144,11 +144,14 @@ static void handle_keydown(const SDL_Event *ev)
 
     if (sym == SDLK_F5)  g_quicksave_request  = 1;
     if (sym == SDLK_F9)  g_quickload_request  = 1;
-    if (sym == SDLK_F3)  g_stats_dump_request = 1;
+    /* F10: play statistics on screen (was F3, log only). */
+    if (sym == SDLK_F10) g_stats_dump_request = 1;
     if (sym == SDLK_F12 || sym == SDLK_AC_BACK) g_pause_menu_request = 1;
     if (sym == SDLK_F11) plat_video_toggle_fullscreen();
 #ifndef WACKI_PS2
-    if (sym == SDLK_F10) platform_video_toggle_aspect_mode();
+    /* F7: aspect 4:3 / stretch (was F10). */
+    if (sym == SDLK_F7)  platform_video_toggle_aspect_mode();
+    if (sym == SDLK_F3)  plat_video_toggle_smoothing();
     if (sym == SDLK_F8)  platform_touch_cycle_mode();
     /* Filters / subtitles (each shows its state at the top of the
      * screen and is saved): F1 colours, F2 subtitles, F4 captions for

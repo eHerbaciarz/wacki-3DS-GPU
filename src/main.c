@@ -9,7 +9,7 @@
  *     find the data directory, open SDL, run the cutscene-test mode
  *     OR drop into RunMainGameLoop.
  *
- *   - StatsDump(): F3 stats log line (callers: F3 key handler).
+ *   - StatsDump(): play statistics, log + on screen (F10).
  *
  *   - Module-owned globals: input latches (g_lmb_clicked / g_rmb_
  *     clicked / g_key_state / g_*_request), playthrough stats
@@ -77,7 +77,7 @@ uint16_t g_key_state = 0;
 
 uint8_t g_quicksave_request = 0;  /* T53 — F5 latch */
 uint8_t g_quickload_request = 0;  /* T53 — F9 latch */
-uint8_t g_stats_dump_request = 0; /* T56 — F3 latch */
+uint8_t g_stats_dump_request = 0; /* T56 — F10 latch */
 uint8_t g_pause_menu_request = 0; /* T24 — F12 latch */
 
 WackiStats g_stats = {0}; /* T56 — playthrough stats */
@@ -105,7 +105,7 @@ const char *g_scale_mode = "nearest";
  * always full-screen since there's no windowing system). */
 int g_fullscreen = 0;
 
-/* ---- stats dump (F3) -------------------------------------------- */
+/* ---- stats dump (F10) ------------------------------------------- */
 
 void StatsDump(void)
 {
@@ -115,6 +115,16 @@ void StatsDump(void)
     LOG_INFO("stats", "elapsed=%02u:%02u clicks=%u dialogs=%u komnata-loads=%u "
                       "quicksave=%u quickload=%u",
              secs / 60, secs % 60, g_stats.total_clicks, g_stats.total_dialogs, g_stats.total_komnata_loads, g_stats.total_quicksaves, g_stats.total_quickloads);
+    /* …and on screen (F10), for 5 s at the top. */
+    char msg[200];
+    snprintf(msg, sizeof msg,
+             "Czas gry %u:%02u   klikni\xC4\x99\x63ia %u   rozmowy %u|"
+             "wej\xC5\x9B\x63ia do pokoj\xC3\xB3w %u   zapisy %u   wczytania %u",
+             (unsigned)(secs / 60), (unsigned)(secs % 60),
+             (unsigned)g_stats.total_clicks, (unsigned)g_stats.total_dialogs,
+             (unsigned)g_stats.total_komnata_loads,
+             (unsigned)g_stats.total_quicksaves, (unsigned)g_stats.total_quickloads);
+    SubtitlesHint(msg, 5000);
 }
 
 /* ---- data-root discovery ---------------------------------------- *

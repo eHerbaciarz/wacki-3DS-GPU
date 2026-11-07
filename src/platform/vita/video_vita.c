@@ -25,7 +25,7 @@
  *     button of the Grafika menu (s_opt_gfx1 / video_mode) like the 3DS
  *     GPU backend; it changes the moment the button is clicked;
  *   - 4:3 (725×544, centred, black bars) or stretch (960×544), as before
- *     (Y button / F10); touch maps through the same rectangle
+ *     (Y button / F7); touch maps through the same rectangle
  *     (vita_video_touch_to_game, used by touch_vita.c);
  *   - every number goes to ux0:/data/wacki/wacki_perf.log
  *     (perf_log_vita.c), in the same format as the 3DS log. */
@@ -290,6 +290,12 @@ void plat_video_shutdown(void)
     free(s_prev);
     s_prev = NULL;
     perf_log_shutdown();
+}
+
+/* Smoothing follows the Grafika menu's first button here. */
+void plat_video_toggle_smoothing(void)
+{
+    SubtitlesHint("Wyg\xC5\x82""adzanie: pierwszy przycisk w menu Grafika", 2500);
 }
 
 /* No windows on the Vita: always full screen. */
