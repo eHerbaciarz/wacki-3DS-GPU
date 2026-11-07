@@ -201,8 +201,46 @@ TEST(long_text_is_wrapped_not_cut)
     SubtitlesUnload();
 }
 
+TEST(menu_hint_shows_without_file_or_option)
+{
+    SubtitlesUnload();
+    FontHandle *keep = g_default_font;
+    g_default_font = make_font();
+    g_subtitles_on = 0;                          /* subtitles off */
+    static uint8_t frame[640 * 480];
+    static uint8_t pal[768];
+    memset(frame, 7, sizeof frame);
+    memset(pal, 0, sizeof pal);
+    pal[4*3] = pal[4*3+1] = pal[4*3+2] = 250;
+    ASSERT_TRUE(SubtitlesComposeFrame(frame, pal, 640, 480) == frame);
+    SubtitlesHint("Napisy dla nies\xC5\x82ysz\xC4\x85""cych: w\xC5\x82\xC4\x85""czone", 2000);
+    const uint8_t *out = SubtitlesComposeFrame(frame, pal, 640, 480);
+    ASSERT_TRUE(out != frame);
+    int top = 0;
+    for (int y = 0; y < 60; ++y)
+        for (int x = 0; x < 640; ++x) if (out[y * 640 + x] == 4) ++top;
+    ASSERT_TRUE(top > 50);
+    SubtitlesHint(NULL, 0);
+    ASSERT_TRUE(SubtitlesComposeFrame(frame, pal, 640, 480) == frame);
+    ASSERT_EQ(SubtitlesLoaded(), 0);
+
+    /* SDH = speaker names + sound captions, from wacki.cfg or the file */
+    g_subtitles_speakers = 1; g_subtitles_sounds = 1;
+    ASSERT_EQ(SubtitlesSdhActive(), 1);
+    g_subtitles_sounds = 0;
+    ASSERT_EQ(SubtitlesSdhActive(), 0);
+    g_subtitles_speakers = -1; g_subtitles_sounds = -1;
+    SubtitlesLoadBuffer(k_file, sizeof k_file - 1);   /* @mowcy=1, sounds default 1 */
+    ASSERT_EQ(SubtitlesSdhActive(), 1);
+    SubtitlesUnload();
+
+    g_subtitles_on = 1;
+    g_default_font = keep;
+}
+
 SUITE(subtitles)
 {
+    RUN_TEST(menu_hint_shows_without_file_or_option);
     RUN_TEST(parse_counts_entries);
     RUN_TEST(utf8_to_font_polish_and_fallbacks);
     RUN_TEST(dialogue_lookup_is_case_insensitive);

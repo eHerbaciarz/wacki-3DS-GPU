@@ -49,7 +49,12 @@ static uint8_t s_opt_music     = 1;
 static uint8_t s_opt_subtitles = 1;
 static uint8_t s_opt_voice     = 1;
 static uint8_t s_opt_dialogues = 1;
-static uint8_t s_opt_extra     = 0;   /* semantic still under RE */
+/* The 5th Solund button: the original's meaning is still unknown (the
+ * port never used it), so it now switches "napisy dla niesłyszących" —
+ * speaker names + sound captions (src/text/subtitles.c), saved in
+ * wacki.cfg (subtitles_speakers / subtitles_sounds). Its icon is the
+ * original's, so hovering it shows a hint at the top of the screen. */
+static uint8_t s_opt_extra     = 0;
 
 /* Grafika.pic toggle flags. */
 static uint8_t s_opt_gfx1 = 1;        /* video_mode */
@@ -180,9 +185,30 @@ static void reassert_audio_option_state(void)
     g_dialogues_on = s_opt_dialogues;
 }
 
+extern uint16_t g_menu_hover_id;            /* menu_loop.c */
+extern char     g_subtitles_lang[16];       /* text/subtitles.c */
+extern int      g_subtitles_speakers, g_subtitles_sounds;
+extern void     ConfigSave(void);
+
+/* Hint for the SDH button: its state, and a warning when there is no
+ * subtitle file to show anything from. */
+static void solund_sdh_hint(uint32_t ms)
+{
+    char msg[160];
+    int  n = snprintf(msg, sizeof msg, "Napisy dla nies\xC5\x82ysz\xC4\x85""cych: %s",
+                      s_opt_extra ? "w\xC5\x82\xC4\x85""czone" : "wy\xC5\x82\xC4\x85""czone");
+    if (!SubtitlesLoaded() && n > 0 && (size_t)n < sizeof msg)
+        snprintf(msg + n, sizeof msg - (size_t)n, "|(brak pliku napisy/%s.txt)",
+                 g_subtitles_lang[0] ? g_subtitles_lang : "pl");
+    SubtitlesHint(msg, ms);
+}
+
 static int SolundClick(int trigger)
 {
     int toggled = 1;
+    /* Follow the real setting (wacki.cfg / the subtitle file's own
+     * defaults) so the button always shows what is in effect. */
+    s_opt_extra = SubtitlesSdhActive() ? 1 : 0;
     switch (trigger) {
     case SOLUND_BTN_MUSIC:
         s_opt_music ^= 1;
@@ -202,7 +228,11 @@ static int SolundClick(int trigger)
         break;
     case SOLUND_BTN_EXTRA:
         s_opt_extra ^= 1;
-        LOG_TRACE("opt", "extra (fade_color_index) = %d", s_opt_extra);
+        g_subtitles_speakers = s_opt_extra;
+        g_subtitles_sounds   = s_opt_extra;
+        ConfigSave();
+        solund_sdh_hint(2000);
+        LOG_TRACE("opt", "napisy dla nieslyszacych = %d", s_opt_extra);
         break;
     case SOLUND_BTN_EXIT:
         reassert_audio_option_state();
@@ -210,7 +240,9 @@ static int SolundClick(int trigger)
         return SOLUND_RC_EXIT;
     default:
         toggled = 0;
-        break;     /* idle per-frame call (trigger=-1) */
+        /* idle per-frame call (trigger=-1): hint while hovering */
+        if (g_menu_hover_id == SOLUND_BTN_EXTRA) solund_sdh_hint(150);
+        break;
     }
 
     refresh_solund_toggle_visuals();

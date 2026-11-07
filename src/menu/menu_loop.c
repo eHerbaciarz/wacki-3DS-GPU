@@ -185,6 +185,10 @@ static void paint_menu_background(const void *bg_raw, uint32_t bg_size)
 /* Walk the SceneDef's button table for whichever sprite the mouse is
  * currently over. Returns (button_idx, button_id) via out params;
  * idx = -1 when nothing is hovered (and id falls back to NEUTRAL). */
+/* Id of the menu button under the cursor this frame (NEUTRAL = none).
+ * Read by option handlers that show a hint on hover (options.c). */
+uint16_t g_menu_hover_id = SCENE_NEUTRAL_VERB;
+
 static void resolve_menu_hover(SceneDef *scene, AnimAsset *buttons,
                                int *out_idx, uint16_t *out_id)
 {
@@ -193,6 +197,7 @@ static void resolve_menu_hover(SceneDef *scene, AnimAsset *buttons,
             : -1;
     *out_idx = idx;
     *out_id  = (idx >= 0) ? scene->buttons[idx].id : SCENE_NEUTRAL_VERB;
+    g_menu_hover_id = *out_id;
 }
 
 /* Fire the SceneDef's on_click handler with the hovered button's id

@@ -12,6 +12,11 @@ są rysowane we wspólnym kodzie, przed wysłaniem klatki na ekran).
 ## W grze
 
 - **Włączanie:** opcja „napisy” w menu dźwięku (Solund) — ta sama co w oryginale.
+- **Napisy dla niesłyszących** (imiona mówców + opisy dźwięków): piąty
+  przycisk w menu Solund (w oryginale jego znaczenie jest nieznane, port go
+  nie używał). Ma oryginalną ikonę, więc po najechaniu kursorem u góry
+  ekranu pojawia się „Napisy dla niesłyszących: włączone/wyłączone” (i
+  ostrzeżenie, jeśli brakuje pliku napisów). Zapis w `wacki.cfg`.
 - **Dialog:** tekst na dole obrazu (nad panelem w grze), przez całą
   kwestię. Z wyłączonym głosem kwestia zostaje na ekranie tyle, ile trzeba
   na przeczytanie (albo do kliknięcia).

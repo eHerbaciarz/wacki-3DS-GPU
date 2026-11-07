@@ -406,7 +406,7 @@ void SubtitlesInit(void)
 
 /* ---- active captions -------------------------------------------------- */
 
-enum { CAP_DLG = 0, CAP_SND, CAP_FILM, CAP_COUNT };
+enum { CAP_DLG = 0, CAP_SND, CAP_FILM, CAP_HINT, CAP_COUNT };
 
 typedef struct {
     const char *text;           /* font bytes (pool) or NULL         */
@@ -479,6 +479,24 @@ uint32_t SubtitlesDialogLine(const char *wav, char speaker_tag)
     LOG_TRACE("napisy", "no text for %s", b);
     return 0;
 }
+
+/* ---- menu hints (shown even with subtitles off / no file) ------------- */
+
+static char s_hint_text[SUB_TEXT_MAX];
+
+void SubtitlesHint(const char *utf8, uint32_t ms)
+{
+    if (!utf8 || !*utf8) { s_cap[CAP_HINT].text = NULL; return; }
+    SubtitlesUtf8ToFont(utf8, strlen(utf8), s_hint_text, sizeof s_hint_text);
+    s_cap[CAP_HINT].text     = s_hint_text;
+    s_cap[CAP_HINT].speaker  = NULL;
+    s_cap[CAP_HINT].until_ms = SDL_GetTicks() + ms;
+}
+
+int SubtitlesLoaded(void) { return s_loaded; }
+
+/* "Napisy dla niesłyszących" = speaker names + sound captions, both on. */
+int SubtitlesSdhActive(void) { return speakers_on() && sounds_on(); }
 
 void SubtitlesDialogEnd(void)
 {
@@ -670,8 +688,11 @@ static size_t   s_out_sz;
 const uint8_t *SubtitlesComposeFrame(const uint8_t *shadow, const uint8_t *pal,
                                      int w, int h)
 {
-    if (!s_loaded || !g_subtitles_on || !shadow || !pal || w <= 0 || h <= 0)
-        return shadow;
+    if (!shadow || !pal || w <= 0 || h <= 0) return shadow;
+    if (s_cap[CAP_HINT].text && (int32_t)(SDL_GetTicks() - s_cap[CAP_HINT].until_ms) >= 0)
+        s_cap[CAP_HINT].text = NULL;
+    int captions = s_loaded && g_subtitles_on;
+    if (!captions && !s_cap[CAP_HINT].text) return shadow;
 
     /* film cue for "now" */
     s_cap[CAP_FILM].text = NULL;
@@ -687,8 +708,9 @@ const uint8_t *SubtitlesComposeFrame(const uint8_t *shadow, const uint8_t *pal,
     if (s_cap[CAP_SND].text && (int32_t)(SDL_GetTicks() - s_cap[CAP_SND].until_ms) >= 0)
         s_cap[CAP_SND].text = NULL;
 
-    int any = 0;
-    for (int k = 0; k < CAP_COUNT; ++k) if (s_cap[k].text) any = 1;
+    int any = s_cap[CAP_HINT].text != NULL;
+    if (captions)
+        for (int k = 0; k < CAP_HINT; ++k) if (s_cap[k].text) any = 1;
     if (!any) return shadow;
 
     size_t need = (size_t)w * h;
@@ -704,15 +726,19 @@ const uint8_t *SubtitlesComposeFrame(const uint8_t *shadow, const uint8_t *pal,
     int bottom = (!g_cutscene_playing && h > SUB_HUD_TOP) ? SUB_HUD_TOP : h;
 
     /* bottom: film text wins over dialogue during a film */
-    Caption *low = s_cap[CAP_FILM].text ? &s_cap[CAP_FILM]
+    Caption *low = !captions ? NULL
+                 : s_cap[CAP_FILM].text ? &s_cap[CAP_FILM]
                  : s_cap[CAP_DLG].text  ? &s_cap[CAP_DLG] : NULL;
     if (low) {
         build_image(low, w);
         if (low->img) blit_caption(s_out, w, h, low, bottom - SUB_GAP - low->img_h, dark, bright);
     }
-    if (s_cap[CAP_SND].text) {
-        build_image(&s_cap[CAP_SND], w);
-        blit_caption(s_out, w, h, &s_cap[CAP_SND], SUB_GAP, dark, bright);
+    /* top: a menu hint wins over a sound caption */
+    Caption *high = s_cap[CAP_HINT].text ? &s_cap[CAP_HINT]
+                  : (captions && s_cap[CAP_SND].text) ? &s_cap[CAP_SND] : NULL;
+    if (high) {
+        build_image(high, w);
+        blit_caption(s_out, w, h, high, SUB_GAP, dark, bright);
     }
     return s_out;
 }
