@@ -9,6 +9,7 @@
 #include "wacki/platform/input.h"
 #include "wacki/platform/video.h"
 #include <SDL.h>
+#include <psp2/power.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,6 +17,19 @@
 extern int  g_fullscreen;
 extern char g_data_root[260];
 extern const int g_wacki_pe_slice_count;
+
+/* Full clocks (ReClaw's vita_speed.h): apps start at 333 MHz CPU; the
+ * game gets 444 MHz CPU, 222 bus, 222 GPU, 166 GPU crossbar. Runs before
+ * main() (so before SDL_Init, as the note asks). Also: the rear touch pad
+ * is touched by accident while holding the Vita — SDL ignores it. */
+__attribute__((constructor)) static void vita_full_speed(void)
+{
+    scePowerSetArmClockFrequency(444);
+    scePowerSetBusClockFrequency(222);
+    scePowerSetGpuClockFrequency(222);
+    scePowerSetGpuXbarClockFrequency(166);
+    setenv("VITA_DISABLE_TOUCH_BACK", "1", 1);
+}
 
 static int load_wacki_exe_dynamic(void)
 {
@@ -48,7 +62,9 @@ void plat_apply_video_prefs(void)
 
     /* Szybkość: nie czekaj na VSync; wymuś prostszy present */
     SDL_SetHint(SDL_HINT_RENDER_VSYNC, "0");
-    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0"); /* nearest, taniej */
+    /* Próbkowanie ustawia video_vita.c per tekstura (wygładzanie wg
+     * pierwszego przycisku Grafiki); domyślnie najbliższy sąsiad. */
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
 
     /* reszta jak było: PE load… */

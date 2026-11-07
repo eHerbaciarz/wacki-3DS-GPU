@@ -25,9 +25,11 @@ LDFLAGS_SIZE := -Wl,--gc-sections
 
 SDL_CFG := -I$(VITASDK)/arm-vita-eabi/include/SDL2
 
-# Oficjalne SDL2 Vita (GXM) — bez vitaGL / OpenGL / C++
+# Oficjalne SDL2 Vita (GXM) — bez vitaGL / OpenGL / C++. SDL2_mixer nie
+# jest używany przez kod (dźwięk: audio_sdl.c na samym SDL2), więc go nie
+# linkujemy — build nie wymaga już tej paczki.
 SDL_LIB := -L$(VITASDK)/arm-vita-eabi/lib \
-           -lSDL2 -lSDL2_mixer \
+           -lSDL2 \
            -lSceDisplay_stub -lSceGxm_stub \
            -lSceCtrl_stub -lSceTouch_stub -lSceHid_stub -lSceMotion_stub \
            -lSceAudio_stub -lSceAudioIn_stub \
@@ -52,7 +54,8 @@ ENGINE_SRCS += src/platform/vita/vita.c \
                src/platform/sdl/file_host.c \
                src/platform/sdl/audio_sdl.c \
                src/platform/sdl/flic_host.c \
-               src/platform/sdl/video_sdl.c \
+               src/platform/vita/video_vita.c \
+               src/platform/vita/perf_log_vita.c \
                src/platform/sdl/system_sdl.c
 
 # ---- VPK packaging ------------------------------------------------------

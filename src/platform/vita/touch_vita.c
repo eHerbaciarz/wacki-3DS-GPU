@@ -40,14 +40,14 @@ static int is_front(const SDL_Event *ev)
     return ev->tfinger.touchId == (SDL_TouchID)VITA_FRONT_TOUCH_ID;
 }
 
+/* video_vita.c: through the rectangle the picture is drawn in (the 4:3
+ * mode has black bars, so the whole panel is not the whole game). */
+void vita_video_touch_to_game(float nx, float ny, int *gx, int *gy);
+
 static void set_cursor_from_norm(float nx, float ny)
 {
-    int x = (int)(nx * (float)GAME_W);
-    int y = (int)(ny * (float)GAME_H);
-    if (x < 0) x = 0;
-    if (y < 0) y = 0;
-    if (x >= GAME_W) x = GAME_W - 1;
-    if (y >= GAME_H) y = GAME_H - 1;
+    int x, y;
+    vita_video_touch_to_game(nx, ny, &x, &y);
     g_mouse_x = (int16_t)x;
     g_mouse_y = (int16_t)y;
 }

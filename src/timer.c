@@ -33,6 +33,11 @@ int ArmPeriodicCallback(void *self_, uint32_t period_ms,
  * to ~15 even when the engine could have hit ~25. Deadline-aware
  * pacing gives the same 30-FPS cap on fast hosts and is essentially
  * free on slow ones. */
+/* Optional: told how long each pacing sleep really took, in ms (NULL =
+ * nobody listens). The Vita port's perf log uses it to keep "sleep" apart
+ * from engine work (the 3DS counts sleeps in its own SDL_Delay). */
+void (*g_pace_sleep_hook)(uint32_t ms) = NULL;
+
 void EnginePaceFrame(uint32_t target_ms)
 {
     static uint32_t s_next_deadline = 0;
@@ -44,8 +49,10 @@ void EnginePaceFrame(uint32_t target_ms)
     }
 
     if (now < s_next_deadline) {
+        uint32_t before = now;
         SDL_Delay(s_next_deadline - now);
         now = SDL_GetTicks();
+        if (g_pace_sleep_hook) g_pace_sleep_hook(now - before);
     }
     /* If work overshot the deadline, restart counting from "now" so
      * we don't enter an "owing frames" catch-up state. */
