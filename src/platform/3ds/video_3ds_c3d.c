@@ -41,12 +41,13 @@
  * buffered framebuffers are swapped at the next vblank, so no tearing.
  * Every number goes to sdmc:/3ds/wacki/wacki_perf.log (perf_log_3ds.c).
  *
- * TEXTURE ROW ORDER: rows are copied with GX_TRANSFER_FLIP_VERT(1) (as
- * libctru's own texture examples do) and sampled with v = 1 - y/512 (the
- * order ReClaw checked on a New 3DS: the texture's first memory row is
- * the picture's top). If the picture ever shows upside down on some
- * console/emulator, build with -DWACKI_C3D_TEX_FLIP=0 — that is the only
- * switch involved. */
+ * TEXTURE ROW ORDER: rows are copied WITHOUT GX_TRANSFER_FLIP_VERT
+ * (picture row y → texture memory row y, the layout ReClaw writes by hand)
+ * and sampled with v = 1 - y/512 (ReClaw, checked on a New 3DS: the
+ * texture's first memory row is the picture's top). Checked on a New 3DS
+ * here too: FLIP_VERT(1) — as in libctru's texture examples — showed the
+ * whole picture upside down (it mirrors the whole 512-row block, so row y
+ * landed in row 511-y). -DWACKI_C3D_TEX_FLIP=1 brings that back. */
 
 #include "wacki.h"
 #include "wacki/log.h"
@@ -73,7 +74,7 @@
 #define TEX_H 512
 
 #ifndef WACKI_C3D_TEX_FLIP
-#define WACKI_C3D_TEX_FLIP 1
+#define WACKI_C3D_TEX_FLIP 0
 #endif
 
 /* Zoom on the bottom screen while smoothing is on: 0 = sharp (nearest)

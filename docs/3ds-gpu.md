@@ -82,8 +82,9 @@ tools/build-3ds-cia.sh              # dist/wacki.cia z dist/wacki
 
 ## Do przetestowania (na sprzęcie)
 
-- [ ] Obraz nie jest odwrócony do góry nogami (gdyby był: zbudować z
-      `-DWACKI_C3D_TEX_FLIP=0` — jedyny przełącznik od tego).
+- [x] Obraz nie jest odwrócony do góry nogami — był przy
+      `GX_TRANSFER_FLIP_VERT(1)`; teraz domyślnie `WACKI_C3D_TEX_FLIP=0`
+      (sprawdzić ponownie: obraz prosto, bez czarnego paska u góry).
 - [ ] 4:3 i stretch (przełączanie w grze), czarne pasy w 4:3.
 - [ ] Dolny ekran: zoom 1×/2×/4×/cała klatka, dotyk trafia w kliknięte
       miejsce na każdym poziomie, przytrzymanie palca nie „ucieka”.
