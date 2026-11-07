@@ -155,9 +155,40 @@ int plat_video_init(int w, int h, const char *title)
     return 1;
 }
 
+#ifdef WACKI_SWITCH
+/* Switch: smoothing (linear filtering of the 640×480 frame as the GPU
+ * scales it up to 720p/1080p) follows the FIRST button of the Grafika
+ * menu (s_opt_gfx1 / video_mode, "better graphics") — on by default,
+ * changed the moment the button is clicked, saved with the options. The
+ * same button does this on the 3DS (video_3ds_c3d.c) and the Vita
+ * (video_vita.c). Off = sharp pixels (nearest), as before. */
+static int s_switch_smooth = -1;
+
+static void switch_apply_smoothing(void)
+{
+    int on = GraphicsAlphaFxEnabled() ? 1 : 0;
+    if (on == s_switch_smooth || !s_tex) return;
+    if (SDL_SetTextureScaleMode(s_tex, on ? SDL_ScaleModeLinear
+                                          : SDL_ScaleModeNearest) == 0) {
+        s_switch_smooth = on;
+        LOG_INFO("platform", "smoothing %s", on ? "on" : "off");
+    } else {
+        static int s_logged;
+        if (!s_logged) {
+            LOG_WARN("platform", "SDL_SetTextureScaleMode: %s", SDL_GetError());
+            s_logged = 1;
+        }
+        s_switch_smooth = on;   /* don't retry every frame */
+    }
+}
+#endif
+
 void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
 {
     if (!s_tex || !shadow || !pal) return;
+#ifdef WACKI_SWITCH
+    switch_apply_smoothing();
+#endif
 
     void *pixels = NULL; int pitch = 0;
     if (SDL_LockTexture(s_tex, NULL, &pixels, &pitch) == 0 && pixels) {
