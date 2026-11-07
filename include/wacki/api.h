@@ -245,6 +245,7 @@ size_t         SubtitlesUtf8ToFont(const char *s, size_t n, char *out, size_t ca
 uint32_t       SubtitlesDialogLine(const char *wav, char speaker_tag);
 void           SubtitlesDialogEnd(void);
 void           SubtitlesSound(const char *wav);  /* caption for the deaf */
+void           SubtitlesItemHover(const char *wav); /* item name, while hovered */
 void           SubtitlesHint(const char *utf8, uint32_t ms); /* top, any time */
 int            SubtitlesLoaded(void);
 int            SubtitlesSdhActive(void);       /* speaker names + sound captions */

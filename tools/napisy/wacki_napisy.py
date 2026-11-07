@@ -138,6 +138,18 @@ def rozmowy_z_gadek(tekst):
     return wynik
 
 
+def przedmioty_z_item_scr(tekst):
+    """[(numer, wav)] z Item.scr: bloki `[N] plik.wav` (jak src/hud/items.c)."""
+    wynik = []
+    for m in re.finditer(r"\[(\d+)\][ \t\r\n]*([^\s\[]+)", tekst):
+        wynik.append((int(m.group(1)), m.group(2).lower()))
+    return wynik
+
+
+def znajdz_item_scr(a):
+    return mapa_plikow(katalogi_danych(a), (".scr",)).get("item.scr")
+
+
 # --------------------------------------------------------------------------
 # rozpakowywanie DTA
 
@@ -451,6 +463,29 @@ def cmd_przepisz(a):
     log("Dialogi: przepisane %d, brak pliku WAV dla %d, razem w Gadki.scr %d."
         % (zrobione, brak, len(widziane)))
 
+    # nazwy przedmiotów (Item.scr): krótkie nagrania, jedno-dwa słowa
+    item = znajdz_item_scr(a)
+    cache.setdefault("przedmioty", {})
+    if item:
+        nowe = 0
+        for _nr, wav in przedmioty_z_item_scr(czytaj_scr(item)):
+            if wav in cache["przedmioty"] and not a.od_nowa:
+                continue
+            sciezka = wavy.get(wav)
+            if not sciezka:
+                continue
+            if silnik is None:
+                silnik = Silnik(a)
+            tekst, _segs, ok = silnik.przepisz(sciezka, "Nazwa przedmiotu w grze.")
+            tekst = tekst.strip().rstrip(".!").strip()
+            cache["przedmioty"][wav] = {"tekst": tekst,
+                                        "pewne": bool(ok and not podejrzane(tekst))}
+            nowe += 1
+        zapisz_cache(a.praca, cache)
+        log("Przedmioty: przepisane %d (razem %d)." % (nowe, len(cache["przedmioty"])))
+    else:
+        log("Przedmioty: nie ma Item.scr — pomijam.")
+
     if a.filmy:
         avi = mapa_plikow([a.dane, getattr(a, "rozpakowane", None)], (".avi",))
         for nazwa, sciezka in sorted(avi.items()):
@@ -479,6 +514,8 @@ def czytaj_napisy(sciezka):
     """Słowniki z istniejącego pliku: dialogi {wav: (mówca, tekst)},
     dźwięki {wav: tekst}, filmy {film: [(t0, t1, tekst)]}, ustawienia."""
     dlg, snd, film, ust, zle = {}, {}, {}, {}, []
+    itm = {}
+    czytaj_napisy.przedmioty = itm
     if not os.path.exists(sciezka):
         return dlg, snd, film, ust, zle
     sekcja, biezacy = None, None
@@ -497,6 +534,8 @@ def czytaj_napisy(sciezka):
                     sekcja = "d"
                 elif s == "[dzwieki]":
                     sekcja = "s"
+                elif s == "[przedmioty]":
+                    sekcja = "p"
                 elif s.startswith("[film ") and s.endswith("]"):
                     sekcja, biezacy = "f", s[6:-1].strip().lower()
                     film.setdefault(biezacy, [])
@@ -512,6 +551,8 @@ def czytaj_napisy(sciezka):
                     dlg[pola[0].lower()] = (pola[1], "\t".join(pola[2:]).strip())
             elif sekcja == "s" and len(pola) >= 2:
                 snd[pola[0].lower()] = "\t".join(pola[1:]).strip()
+            elif sekcja == "p" and len(pola) >= 2:
+                itm[pola[0].lower()] = "\t".join(pola[1:]).strip()
             elif sekcja == "f" and len(pola) >= 3:
                 film[biezacy].append((pola[0], pola[1], "\t".join(pola[2:]).strip()))
             else:
@@ -575,11 +616,33 @@ def cmd_plik(a):
             licz["nowe"] += 1
         o.append("%s\t%s\t%s" % (wav, mowca, t))
 
+    stare_p = getattr(czytaj_napisy, "przedmioty", {})
+    item = znajdz_item_scr(a)
+    przedm = przedmioty_z_item_scr(czytaj_scr(item)) if item else []
+    o.append("")
+    o.append("[przedmioty]")
+    o.append("# Nazwy przedmiotów (Item.scr): widać je nad panelem po najechaniu")
+    wav_przedm = set()
+    for nr, wav in przedm:
+        if wav in wav_przedm:
+            continue
+        wav_przedm.add(wav)
+        t = stare_p.get(wav, "")
+        if not t:
+            c = cache.get("przedmioty", {}).get(wav)
+            if c:
+                t = c["tekst"]
+                if t and not c.get("pewne", True):
+                    o.append("# SPRAWDŹ (niepewne rozpoznanie)")
+        o.append("%s\t%s" % (wav, t))
+    for wav in sorted(set(stare_p) - wav_przedm):
+        o.append("%s\t%s" % (wav, stare_p[wav]))
+
     o.append("")
     o.append("[dzwieki]")
     o.append("# Opisy dźwięków dla niesłyszących, np.: wybuch.wav<TAB>[wybuch]")
     wszystkie = mapa_plikow(katalogi_danych(a), (".wav",))
-    for wav in sorted(set(wszystkie) - widziane):
+    for wav in sorted(set(wszystkie) - widziane - wav_przedm):
         o.append("%s\t%s" % (wav, stare_s.get(wav, "")))
     for wav in sorted(set(stare_s) - set(wszystkie)):
         o.append("%s\t%s" % (wav, stare_s[wav]))
@@ -635,8 +698,11 @@ def cmd_sprawdz(a):
             if not re.match(r"^[\d:.,]+$", t0) or not re.match(r"^[\d:.,]+$", t1):
                 print("film %s: zły czas %r–%r" % (nazwa, t0, t1))
                 problemy += 1
-    print("Dialogi: %d (puste %d), dźwięki z opisem: %d, filmy: %d, mówcy=%s, dźwięki=%s"
-          % (len(dlg), len(puste), sum(1 for v in snd.values() if v), len(film),
+    itm = getattr(czytaj_napisy, "przedmioty", {})
+    print("Dialogi: %d (puste %d), przedmioty z nazwą: %d/%d, dźwięki z opisem: %d, filmy: %d, "
+          "mówcy=%s, dźwięki=%s"
+          % (len(dlg), len(puste), sum(1 for v in itm.values() if v), len(itm),
+             sum(1 for v in snd.values() if v), len(film),
              ust.get("mowcy", "0"), ust.get("dzwieki", "1")))
     sys.exit(1 if problemy else 0)
 
@@ -654,6 +720,7 @@ def cmd_tlumacz(a):
             sys.exit("Brak Argos Translate: pip install argostranslate (i paczka %s→%s)"
                      % (jez_z, a.na))
     stare = czytaj_napisy(wyj)[0] if os.path.exists(wyj) else {}
+    stare_p = dict(getattr(czytaj_napisy, "przedmioty", {})) if os.path.exists(wyj) else {}
     o = []
     with open(zrodlo, encoding="utf-8-sig") as f:
         sekcja = None
@@ -671,13 +738,15 @@ def cmd_tlumacz(a):
                 o.append(linia)
                 continue
             pola = s.split("\t")
-            tekst_idx = {"[dialogi]": 2, "[dzwieki]": 1}.get(sekcja, 2)
+            tekst_idx = {"[dialogi]": 2, "[dzwieki]": 1, "[przedmioty]": 1}.get(sekcja, 2)
             if len(pola) <= tekst_idx or not pola[tekst_idx].strip():
                 o.append(linia)
                 continue
             oryg = pola[tekst_idx]
             if sekcja == "[dialogi]" and pola[0].lower() in stare and stare[pola[0].lower()][1]:
                 pola[tekst_idx] = stare[pola[0].lower()][1]
+            elif sekcja == "[przedmioty]" and stare_p.get(pola[0].lower()):
+                pola[tekst_idx] = stare_p[pola[0].lower()]
             elif tlumacz:
                 pola[tekst_idx] = " | ".join(tlumacz(x.strip()) for x in oryg.split("|"))
             o.append("# %s: %s" % (jez_z, oryg))

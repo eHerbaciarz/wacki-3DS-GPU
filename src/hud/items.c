@@ -107,6 +107,10 @@ void ItemHoverDwellTick(void)
 
     int idx = (int)(verb - ITEM_VERB_FIRST);
     if (idx >= g_item_wav_count)        return;     /* no name registered */
+    /* The name as text above the panel at once, every frame while hovered
+     * (napisy [przedmioty], src/text/subtitles.c) — the voice still
+     * comes after the dwell below. */
+    if (g_item_wav[idx][0]) SubtitlesItemHover(g_item_wav[idx]);
     if (idx == s_last_item)             return;     /* already announced */
     if (g_tick_counter < s_dwell_until) return;     /* still dwelling */
 

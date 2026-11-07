@@ -23,6 +23,10 @@ są rysowane we wspólnym kodzie, przed wysłaniem klatki na ekran).
 - **Opisy dźwięków** (dla niesłyszących), np. `[wybuch]`, na górze ekranu
   przez 2,5 s — także przy wyłączonym dźwięku.
 - **Filmy:** napisy z czasami, na dole.
+- **Nazwy przedmiotów:** w oryginale nazwę przedmiotu w ekwipunku mówi głos
+  (po ~2 s najechania; plik WAV z `Item.scr`, bez tekstu). Z napisami nazwa
+  pojawia się też jako tekst nad panelem — od razu po najechaniu, póki
+  kursor jest na przedmiocie. Tłumaczy się jak resztę pliku.
 - **Kolory:** jasny tekst z ciemnym obrysem, dobierane z palety bieżącej sceny.
 - **`wacki.cfg`:**
   - `subtitles_lang=pl` — który plik (`napisy/pl.txt`, `napisy/en.txt`…);
@@ -48,6 +52,8 @@ fjgut04a.wav	Fjej	Ebek, chodź tutaj szybko!
 wybuch.wav	[wybuch]
 [film intro.avi]
 00:00.500	00:02.000	Pierwsza linia|druga linia
+[przedmioty]
+magnes.wav	magnes
 ```
 
 ## Narzędzie

@@ -23,6 +23,9 @@
  *     wybuch.wav <TAB> [wybuch]
  *     [film intro.avi]
  *     00:01.200 <TAB> 00:03.500 <TAB> Text shown in the film
+ *     [przedmioty]
+ *     magnes.wav <TAB> magnes        inventory item name (Item.scr WAV):
+ *                                    shown above the panel while hovered
  *
  * "|" forces a line break; long text is wrapped to the screen anyway.
  * Entries with empty text are ignored, so a skeleton file is harmless.
@@ -73,6 +76,7 @@ static char      *s_pool;            /* all strings, font bytes          */
 static size_t     s_pool_len, s_pool_cap;
 static SubDialog *s_dlg;   static int s_dlg_n,   s_dlg_cap;
 static SubSound  *s_snd;   static int s_snd_n,   s_snd_cap;
+static SubSound  *s_itm;   static int s_itm_n,   s_itm_cap;
 static SubCue    *s_cue;   static int s_cue_n,   s_cue_cap;
 static int        s_file_speakers = 0, s_file_sounds = 1;
 static int        s_loaded = 0;
@@ -265,6 +269,7 @@ void SubtitlesUnload(void)
     free(s_pool); s_pool = NULL; s_pool_len = s_pool_cap = 0;
     free(s_dlg); s_dlg = NULL; s_dlg_n = s_dlg_cap = 0;
     free(s_snd); s_snd = NULL; s_snd_n = s_snd_cap = 0;
+    free(s_itm); s_itm = NULL; s_itm_n = s_itm_cap = 0;
     free(s_cue); s_cue = NULL; s_cue_n = s_cue_cap = 0;
     s_loaded = 0;
 }
@@ -273,7 +278,7 @@ void SubtitlesUnload(void)
  * tests (tests/test_subtitles.c). */
 int SubtitlesLoadBuffer(const char *buf, size_t len)
 {
-    enum { SEC_NONE, SEC_DLG, SEC_SND, SEC_FILM } sec = SEC_NONE;
+    enum { SEC_NONE, SEC_DLG, SEC_SND, SEC_FILM, SEC_ITM } sec = SEC_NONE;
     char *film = NULL;
     int   lineno = 0, bad = 0;
 
@@ -305,6 +310,7 @@ int SubtitlesLoadBuffer(const char *buf, size_t len)
         if (s[0] == '[') {
             if (n >= 9 && memcmp(s, "[dialogi]", 9) == 0)       sec = SEC_DLG;
             else if (n >= 9 && memcmp(s, "[dzwieki]", 9) == 0)  sec = SEC_SND;
+            else if (n >= 12 && memcmp(s, "[przedmioty]", 12) == 0) sec = SEC_ITM;
             else if (n > 7 && memcmp(s, "[film ", 6) == 0 && s[n-1] == ']') {
                 sec = SEC_FILM;
                 const char *nm = s + 6; size_t nl = n - 7;
@@ -332,15 +338,23 @@ int SubtitlesLoadBuffer(const char *buf, size_t len)
             s_dlg[s_dlg_n].speaker = (k == 3 && fl[1]) ? pool_add(f[1], fl[1], 1) : NULL;
             s_dlg[s_dlg_n].text    = pool_add(text, tl, 1);
             ++s_dlg_n;
-        } else if (sec == SEC_SND) {
+        } else if (sec == SEC_SND || sec == SEC_ITM) {
             int k = split_tabs(s, n, f, fl, 2);
             if (k < 2) { ++bad; continue; }
             if (fl[1] == 0 || fl[0] == 0) continue;
-            GROW(s_snd, s_snd_n, s_snd_cap);
-            if (s_snd_n >= s_snd_cap) break;
-            s_snd[s_snd_n].wav  = pool_add(f[0], fl[0], 0);
-            s_snd[s_snd_n].text = pool_add(f[1], fl[1], 1);
-            ++s_snd_n;
+            if (sec == SEC_SND) {
+                GROW(s_snd, s_snd_n, s_snd_cap);
+                if (s_snd_n >= s_snd_cap) break;
+                s_snd[s_snd_n].wav  = pool_add(f[0], fl[0], 0);
+                s_snd[s_snd_n].text = pool_add(f[1], fl[1], 1);
+                ++s_snd_n;
+            } else {
+                GROW(s_itm, s_itm_n, s_itm_cap);
+                if (s_itm_n >= s_itm_cap) break;
+                s_itm[s_itm_n].wav  = pool_add(f[0], fl[0], 0);
+                s_itm[s_itm_n].text = pool_add(f[1], fl[1], 1);
+                ++s_itm_n;
+            }
         } else if (sec == SEC_FILM && film) {
             int k = split_tabs(s, n, f, fl, 3);
             uint32_t t0, t1;
@@ -363,11 +377,12 @@ int SubtitlesLoadBuffer(const char *buf, size_t len)
         s_dlg[k].text = fix(s_dlg[k].text);
     }
     for (int k = 0; k < s_snd_n; ++k) { s_snd[k].wav = fix(s_snd[k].wav); s_snd[k].text = fix(s_snd[k].text); }
+    for (int k = 0; k < s_itm_n; ++k) { s_itm[k].wav = fix(s_itm[k].wav); s_itm[k].text = fix(s_itm[k].text); }
     for (int k = 0; k < s_cue_n; ++k) { s_cue[k].film = fix(s_cue[k].film); s_cue[k].text = fix(s_cue[k].text); }
 
     if (bad) LOG_WARN("napisy", "%d line(s) not understood (TABs between fields?)", bad);
-    s_loaded = (s_dlg_n + s_snd_n + s_cue_n) > 0;
-    return s_dlg_n + s_snd_n + s_cue_n;
+    s_loaded = (s_dlg_n + s_snd_n + s_cue_n + s_itm_n) > 0;
+    return s_dlg_n + s_snd_n + s_cue_n + s_itm_n;
 }
 
 void SubtitlesInit(void)
@@ -396,8 +411,8 @@ void SubtitlesInit(void)
         fclose(fp);
         int n = SubtitlesLoadBuffer(buf, got);
         free(buf);
-        LOG_INFO("napisy", "%s: %d dialogue, %d sound, %d film entries", path,
-                 s_dlg_n, s_snd_n, s_cue_n);
+        LOG_INFO("napisy", "%s: %d dialogue, %d sound, %d film, %d item entries", path,
+                 s_dlg_n, s_snd_n, s_cue_n, s_itm_n);
         (void)n;
         return;
     }
@@ -406,7 +421,7 @@ void SubtitlesInit(void)
 
 /* ---- active captions -------------------------------------------------- */
 
-enum { CAP_DLG = 0, CAP_SND, CAP_FILM, CAP_HINT, CAP_COUNT };
+enum { CAP_DLG = 0, CAP_SND, CAP_FILM, CAP_ITEM, CAP_HINT, CAP_COUNT };
 
 typedef struct {
     const char *text;           /* font bytes (pool) or NULL         */
@@ -478,6 +493,22 @@ uint32_t SubtitlesDialogLine(const char *wav, char speaker_tag)
     }
     LOG_TRACE("napisy", "no text for %s", b);
     return 0;
+}
+
+/* Inventory item under the cursor (items.c, every frame while hovered):
+ * its name above the panel. Disappears ~0.15 s after the cursor leaves. */
+void SubtitlesItemHover(const char *wav)
+{
+    if (!s_loaded || !s_itm_n || !wav || !*wav) return;
+    const char *b = basename_of(wav);
+    for (int i = 0; i < s_itm_n; ++i) {
+        if (key_eq(s_itm[i].wav, b)) {
+            s_cap[CAP_ITEM].text     = s_itm[i].text;
+            s_cap[CAP_ITEM].speaker  = NULL;
+            s_cap[CAP_ITEM].until_ms = SDL_GetTicks() + 150;
+            return;
+        }
+    }
 }
 
 /* ---- menu hints (shown even with subtitles off / no file) ------------- */
@@ -707,6 +738,8 @@ const uint8_t *SubtitlesComposeFrame(const uint8_t *shadow, const uint8_t *pal,
     }
     if (s_cap[CAP_SND].text && (int32_t)(SDL_GetTicks() - s_cap[CAP_SND].until_ms) >= 0)
         s_cap[CAP_SND].text = NULL;
+    if (s_cap[CAP_ITEM].text && (int32_t)(SDL_GetTicks() - s_cap[CAP_ITEM].until_ms) >= 0)
+        s_cap[CAP_ITEM].text = NULL;
 
     int any = s_cap[CAP_HINT].text != NULL;
     if (captions)
@@ -728,7 +761,8 @@ const uint8_t *SubtitlesComposeFrame(const uint8_t *shadow, const uint8_t *pal,
     /* bottom: film text wins over dialogue during a film */
     Caption *low = !captions ? NULL
                  : s_cap[CAP_FILM].text ? &s_cap[CAP_FILM]
-                 : s_cap[CAP_DLG].text  ? &s_cap[CAP_DLG] : NULL;
+                 : s_cap[CAP_DLG].text  ? &s_cap[CAP_DLG]
+                 : s_cap[CAP_ITEM].text ? &s_cap[CAP_ITEM] : NULL;
     if (low) {
         build_image(low, w);
         if (low->img) blit_caption(s_out, w, h, low, bottom - SUB_GAP - low->img_h, dark, bright);

@@ -238,8 +238,37 @@ TEST(menu_hint_shows_without_file_or_option)
     g_default_font = keep;
 }
 
+TEST(item_name_shown_above_panel_while_hovered)
+{
+    static const char f[] = "[przedmioty]\nMAGNES.WAV\tmagnes\n";
+    ASSERT_EQ(SubtitlesLoadBuffer(f, sizeof f - 1), 1);
+    FontHandle *keep = g_default_font;
+    g_default_font = make_font();
+    g_subtitles_on = 1;
+    g_cutscene_playing = 0;
+    static uint8_t frame[640 * 480];
+    static uint8_t pal[768];
+    memset(frame, 7, sizeof frame);
+    memset(pal, 0, sizeof pal);
+    pal[6*3] = pal[6*3+1] = pal[6*3+2] = 240;
+    SubtitlesItemHover("magnes.wav");
+    const uint8_t *out = SubtitlesComposeFrame(frame, pal, 640, 480);
+    int near_panel = 0, hud = 0;
+    for (int y = 340; y < 480; ++y)
+        for (int x = 0; x < 640; ++x) {
+            if (out[y * 640 + x] == 6 && y < 400) ++near_panel;
+            if (out[y * 640 + x] != 7 && y >= 400) ++hud;
+        }
+    ASSERT_TRUE(near_panel > 20);
+    ASSERT_EQ(hud, 0);
+    SubtitlesItemHover("nie_ma.wav");          /* unknown: nothing changes */
+    g_default_font = keep;
+    SubtitlesUnload();
+}
+
 SUITE(subtitles)
 {
+    RUN_TEST(item_name_shown_above_panel_while_hovered);
     RUN_TEST(menu_hint_shows_without_file_or_option);
     RUN_TEST(parse_counts_entries);
     RUN_TEST(utf8_to_font_polish_and_fallbacks);
