@@ -16,7 +16,11 @@ klatkę 640×480 8-bit z paletą, więc nie trzeba przechwytywać wywołań SDL.
    picaGL).
 3. Jeden prostokąt z teksturą na ekran:
    - górny: 4:3 — 320×240 na środku z czarnymi pasami (dokładnie 2:1, więc
-     wygładzanie = czysta średnia 2×2), albo stretch — całe 400×240;
+     wygładzanie = czysta średnia 2×2), albo „stretch” = **wypełnienie**:
+     pełne 400 px szerokości bez zniekształcenia (skala 0,625), widać 384
+     z 480 wierszy. Okno stoi na dole (panel widoczny, ucięta góra sceny) i
+     jedzie w górę za kursorem, gdy ten wejdzie w uciętą część; w filmach
+     wyśrodkowane. Przełącza przycisk Y;
    - dolny: wycinek tej samej tekstury (zoom 1×/2×/4× wokół kursora albo
      cała klatka), bez drugiej kopii.
    - stereo 3D (suwak otwarty): druga tekstura z obrazem prawego oka
@@ -85,7 +89,9 @@ tools/build-3ds-cia.sh              # dist/wacki.cia z dist/wacki
 - [x] Obraz nie jest odwrócony do góry nogami — był przy
       `GX_TRANSFER_FLIP_VERT(1)`; teraz domyślnie `WACKI_C3D_TEX_FLIP=0`
       (sprawdzić ponownie: obraz prosto, bez czarnego paska u góry).
-- [ ] 4:3 i stretch (przełączanie w grze), czarne pasy w 4:3.
+- [ ] 4:3 i wypełnienie (Y): w wypełnieniu bez zniekształceń, panel
+      widoczny, widok płynnie jedzie w górę za kursorem i wraca; filmy
+      wyśrodkowane.
 - [ ] Dolny ekran: zoom 1×/2×/4×/cała klatka, dotyk trafia w kliknięte
       miejsce na każdym poziomie, przytrzymanie palca nie „ucieka”.
 - [ ] Wygładzanie: domyślnie włączone; pierwszy przycisk Grafiki je
