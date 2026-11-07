@@ -15,6 +15,7 @@
 #ifndef WACKI_PLATFORM_INPUT_H
 #define WACKI_PLATFORM_INPUT_H
 
+
 /* Whether the platform has a real, reliable keyboard. Desktop = yes. On the
  * handhelds (Miyoo / PortMaster) every hardware button is mapped by firmware
  * to some keyboard scancode — unpredictably: a volume key aliased onto the
