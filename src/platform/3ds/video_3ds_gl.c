@@ -56,6 +56,7 @@
 #include "wacki.h"
 #include "wacki/log.h"
 #include "wacki/platform/video.h"
+#include "perf_log_3ds.h"
 #include <3ds.h>
 #include <malloc.h>
 #include <string.h>
@@ -512,6 +513,7 @@ int plat_video_init(int w, int h, const char *title)
 void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
 {
     if (!shadow || !pal) return;
+    uint64_t t_enter = perf_now();   /* wacki_perf.log: CPU time of this present */
 
     /* ---- Dirty-frame check --------------------------------------- *
      *
@@ -598,7 +600,10 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
     if (stereo_enabled && disparity_px_now != s_prev_disparity_px)
         top_dirty = 1;
 
-    if (!top_dirty && !bot_dirty) return;
+    if (!top_dirty && !bot_dirty) {
+        perf_log_present(0, 0, 0, 0.0f);
+        return;
+    }
 
     memcpy(s_shadow, shadow, (size_t)w * h);
     memcpy(s_palette, pal, 256 * 3);
@@ -739,6 +744,7 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
      * was dirty is harmless — the untouched screen's "swap" just
      * re-presents the same buffer it was already showing. */
     gfxSwapBuffers();
+    perf_log_present(1, perf_now() - t_enter, 0, 0.0f);
 }
 
 void plat_video_shutdown(void)
