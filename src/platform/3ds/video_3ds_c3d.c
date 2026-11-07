@@ -79,11 +79,27 @@
 #define WACKI_C3D_TEX_FLIP 0
 #endif
 
-/* Zoom on the bottom screen while smoothing is on: 0 = sharp (nearest)
- * when magnifying, 1 = smooth there too. */
-#ifndef WACKI_C3D_SMOOTH_MAG
-#define WACKI_C3D_SMOOTH_MAG 0
-#endif
+/* Bottom-screen zoom filter (wacki.cfg zoom_filter, SELECT+X cycles):
+ *   0 ostry    — nearest: big square pixels
+ *   1 gładki   — linear: soft
+ *   2 Scale2x  — sharp, straight/45° edges smoothed (default; cheap)
+ *   3 2xSaI    — smooth edges
+ *   4 xBR      — edges of any slope (most CPU: watch wacki_perf.log)
+ * 2–4 run on the CPU over the visible part only (160×120 at 2×, 80×60
+ * twice at 4×) into their own 512×256 texture (util/pixel_filters.c). */
+#define ZOOM_FILTER_COUNT   5
+#define ZOOM_FILTER_DEFAULT 2
+#define ZTEX_W 512
+#define ZTEX_H 256
+extern int g_zoom_filter;                 /* config.c; -1 = default */
+static const char *const k_zoom_filter_names[ZOOM_FILTER_COUNT] = {
+    "ostry", "g\xC5\x82""adki", "Scale2x", "2xSaI", "xBR",
+};
+static int zoom_filter_mode(void)
+{
+    int m = g_zoom_filter < 0 ? ZOOM_FILTER_DEFAULT : g_zoom_filter;
+    return (m >= 0 && m < ZOOM_FILTER_COUNT) ? m : ZOOM_FILTER_DEFAULT;
+}
 
 #define DISPLAY_TRANSFER_FLAGS                                              \
     (GX_TRANSFER_FLIP_VERT(0) | GX_TRANSFER_OUT_TILED(0) |                  \
@@ -305,8 +321,8 @@ static void draw_on(C3D_RenderTarget *rt, int screen_w, int screen_h,
 static void apply_filter(int smooth)
 {
     GPU_TEXTURE_FILTER_PARAM min = smooth ? GPU_LINEAR : GPU_NEAREST;
-    GPU_TEXTURE_FILTER_PARAM mag = (smooth && WACKI_C3D_SMOOTH_MAG) ? GPU_LINEAR
-                                                                     : GPU_NEAREST;
+    /* magnifying = the bottom zoom: linear only for the "gładki" filter */
+    GPU_TEXTURE_FILTER_PARAM mag = zoom_filter_mode() == 1 ? GPU_LINEAR : GPU_NEAREST;
     for (int i = 0; i < 2; ++i)
         if (s_tex_ok[i]) C3D_TexSetFilter(&s_tex[i], mag, min);
 }
@@ -404,9 +420,99 @@ static int gpu_init(void)
     return 1;
 }
 
+/* ---- filtered bottom-screen zoom (modes 2–4) ------------------------ */
+
+static C3D_Tex   s_ztex;
+static int       s_ztex_ok;
+static uint16_t *s_zstage;               /* linear, ZTEX_W × ZTEX_H */
+static uint32_t *s_zbuf_a, *s_zbuf_b;    /* 0x00RRGGBB work buffers */
+static int       s_zoom_failed;
+
+static int alloc_zoom_tex(void)
+{
+    if (s_ztex_ok) return 1;
+    if (s_zoom_failed) return 0;
+    if (!C3D_TexInitVRAM(&s_ztex, ZTEX_W, ZTEX_H, GPU_RGB565) &&
+        !C3D_TexInit(&s_ztex, ZTEX_W, ZTEX_H, GPU_RGB565)) goto fail;
+    C3D_TexSetWrap(&s_ztex, GPU_CLAMP_TO_EDGE, GPU_CLAMP_TO_EDGE);
+    C3D_TexSetFilter(&s_ztex, GPU_NEAREST, GPU_NEAREST);   /* drawn 1:1 */
+    s_zstage = (uint16_t *)linearAlloc(ZTEX_W * ZTEX_H * sizeof(uint16_t));
+    s_zbuf_a = (uint32_t *)malloc(BOT_WIDTH * BOT_HEIGHT * sizeof(uint32_t));
+    s_zbuf_b = (uint32_t *)malloc(BOT_WIDTH * BOT_HEIGHT * sizeof(uint32_t));
+    if (!s_zstage || !s_zbuf_a || !s_zbuf_b) {
+        C3D_TexDelete(&s_ztex);
+        goto fail;
+    }
+    memset(s_zstage, 0, ZTEX_W * ZTEX_H * sizeof(uint16_t));
+    s_ztex_ok = 1;
+    return 1;
+fail:
+    if (s_zstage) { linearFree(s_zstage); s_zstage = NULL; }
+    free(s_zbuf_a); free(s_zbuf_b); s_zbuf_a = s_zbuf_b = NULL;
+    s_zoom_failed = 1;
+    LOG_ERROR("3ds-gpu", "no memory for the zoom filter — plain zoom");
+    return 0;
+}
+
+/* The visible part of the frame (rw×rh at sx,sy; rw*zoom = 320) through
+ * the pixel filter into s_zstage, queued for upload into s_ztex. */
+static void build_zoom_filtered(const uint8_t *shadow, const uint8_t *pal,
+                                int w, int sx, int sy, int rw, int rh,
+                                int zoom, int kind)
+{
+    uint32_t lut[256];
+    for (int i = 0; i < 256; ++i)
+        lut[i] = ((uint32_t)pal[i*3] << 16) | ((uint32_t)pal[i*3+1] << 8) | pal[i*3+2];
+    for (int y = 0; y < rh; ++y) {
+        const uint8_t *src = shadow + (size_t)(sy + y) * w + sx;
+        uint32_t      *dst = s_zbuf_a + (size_t)y * rw;
+        for (int x = 0; x < rw; ++x) dst[x] = lut[src[x]];
+    }
+    uint32_t *res = s_zbuf_b;
+    PixelUpscale2x(kind, s_zbuf_a, rw, rh, s_zbuf_b);           /* 2× */
+    if (zoom == 4) {
+        PixelUpscale2x(kind, s_zbuf_b, rw * 2, rh * 2, s_zbuf_a); /* 4× */
+        res = s_zbuf_a;
+    }
+    for (int y = 0; y < BOT_HEIGHT; ++y) {
+        const uint32_t *srow = res + (size_t)y * BOT_WIDTH;
+        uint16_t       *d    = s_zstage + (size_t)y * ZTEX_W;
+        for (int x = 0; x < BOT_WIDTH; ++x) {
+            uint32_t c = srow[x];
+            d[x] = (uint16_t)((((c >> 19) & 0x1F) << 11) | (((c >> 10) & 0x3F) << 5) |
+                              ((c >> 3) & 0x1F));
+        }
+    }
+    GSPGPU_FlushDataCache(s_zstage, ZTEX_W * BOT_HEIGHT * sizeof(uint16_t));
+    C3D_SyncDisplayTransfer((u32 *)s_zstage, GX_BUFFER_DIM(ZTEX_W, ZTEX_H),
+                            (u32 *)s_ztex.data, GX_BUFFER_DIM(ZTEX_W, ZTEX_H),
+                            TEXTURE_TRANSFER_FLAGS);
+}
+
+static int s_zoom_filter_dirty = 0;
+
+/* SELECT+X (gamepad_3ds.c): next zoom filter, saved, with a hint. */
+void platform_video_cycle_zoom_filter(void)
+{
+    extern void ConfigSave(void);
+    g_zoom_filter = (zoom_filter_mode() + 1) % ZOOM_FILTER_COUNT;
+    ConfigSave();
+    s_prev_smooth = -1;                  /* mag filter set again */
+    s_zoom_filter_dirty = 1;
+    char msg[80];
+    snprintf(msg, sizeof msg, "Filtr zoomu: %s%s", k_zoom_filter_names[g_zoom_filter],
+             ZOOM_LEVELS[g_zoom_level] == 2 || ZOOM_LEVELS[g_zoom_level] == 4
+                 ? "" : " (dzia\xC5\x82""a przy zoomie 2x/4x, przycisk X)");
+    SubtitlesHint(msg, 2000);
+    perf_log_msg("zoom filter: %d", g_zoom_filter);
+}
+
 static void gpu_shutdown(void)
 {
     if (!s_c3d_up) return;
+    if (s_ztex_ok) { C3D_TexDelete(&s_ztex); s_ztex_ok = 0; }
+    if (s_zstage) { linearFree(s_zstage); s_zstage = NULL; }
+    free(s_zbuf_a); free(s_zbuf_b); s_zbuf_a = s_zbuf_b = NULL;
     for (int i = 0; i < 2; ++i) {
         if (s_tex_ok[i]) C3D_TexDelete(&s_tex[i]);
         if (s_stage[i]) linearFree(s_stage[i]);
@@ -572,7 +678,9 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
     int bot_dirty = top_dirty ||
                     g_mouse_x != s_prev_mouse_x ||
                     g_mouse_y != s_prev_mouse_y ||
-                    g_zoom_level != s_prev_zoom_level;
+                    g_zoom_level != s_prev_zoom_level ||
+                    s_zoom_filter_dirty;
+    s_zoom_filter_dirty = 0;
 
     /* During cutscenes the bottom screen keeps its last picture (no
      * cursor to magnify) — same as video_3ds_gl.c. */
@@ -739,8 +847,28 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
         }
         s_prev_disparity_px = disparity_px_now;
     }
-    if (bot_dirty)
-        draw_on(s_rt_bot, BOT_WIDTH, BOT_HEIGHT, &s_tex[0], QUAD_BOT);
+    if (bot_dirty) {
+        int zf = zoom_filter_mode();
+        if (zf >= 2 && (zoom == 2 || zoom == 4) &&
+            src_region_w * zoom == BOT_WIDTH && src_region_h * zoom == BOT_HEIGHT &&
+            alloc_zoom_tex()) {
+            int kind = zf == 2 ? PIXF_SCALE2X : zf == 3 ? PIXF_SAI2X : PIXF_XBR2X;
+            build_zoom_filtered(shadow, pal, w, src_x, src_y,
+                                src_region_w, src_region_h, zoom, kind);
+            set_quad(QUAD_BOT, 0.0f, 0.0f, (float)BOT_WIDTH, (float)BOT_HEIGHT,
+                     0.0f, 0.0f, (float)BOT_WIDTH, (float)BOT_HEIGHT);
+            /* that quad's UVs are for a 1024×512 texture: rescale */
+            Vtx *v = s_vbuf + QUAD_BOT * 4;
+            for (int i = 0; i < 4; ++i) {
+                v[i].u *= (float)TEX_W / (float)ZTEX_W;
+                v[i].v  = 1.0f - (1.0f - v[i].v) * (float)TEX_H / (float)ZTEX_H;
+            }
+            GSPGPU_FlushDataCache(s_vbuf, sizeof(Vtx) * QUAD_COUNT * 4);
+            draw_on(s_rt_bot, BOT_WIDTH, BOT_HEIGHT, &s_ztex, QUAD_BOT);
+        } else {
+            draw_on(s_rt_bot, BOT_WIDTH, BOT_HEIGHT, &s_tex[0], QUAD_BOT);
+        }
+    }
 
     C3D_FrameEnd(GX_CMDLIST_FLUSH);    /* we flushed our own buffers */
     uint64_t t_end = perf_now();

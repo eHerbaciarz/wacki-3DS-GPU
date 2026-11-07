@@ -37,6 +37,7 @@ extern void run_suite_save_io(int *, int *);
 extern void run_suite_assets(int *, int *);
 extern void run_suite_font(int *, int *);
 extern void run_suite_subtitles(int *, int *);
+extern void run_suite_filters(int *, int *);
 extern void run_suite_binary_data(int *, int *);
 extern void run_suite_timer(int *, int *);
 extern void run_suite_real_vm(int *, int *);
@@ -96,6 +97,7 @@ static const struct suite kSuites[] = {
     { "assets",        run_suite_assets },
     { "font",          run_suite_font },
     { "subtitles",     run_suite_subtitles },
+    { "filters",       run_suite_filters },
     { "walker",        run_suite_walker },
     { "graphics",      run_suite_graphics },
     { "pe_loader",     run_suite_pe_loader },

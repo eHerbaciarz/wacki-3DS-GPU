@@ -306,9 +306,12 @@ void FlushFrameToPrimary(void)
     ensure_shadow();
     if (g_back_shadow) {
         /* Captions (napisy) go on a copy — see src/text/subtitles.c. */
-        const uint8_t *frame = SubtitlesComposeFrame(g_back_shadow, g_palette_rgb,
+        /* Colour filter on the palette (util/color_filter.c), then the
+         * captions on a copy of the frame (text/subtitles.c). */
+        const uint8_t *pal   = ColorFilterPalette(g_palette_rgb);
+        const uint8_t *frame = SubtitlesComposeFrame(g_back_shadow, pal,
                                                      g_screen_w, g_screen_h);
-        PlatformPresent(frame, g_palette_rgb, g_screen_w, g_screen_h);
+        PlatformPresent(frame, pal, g_screen_w, g_screen_h);
     }
     s_dirty_this_count = 0;
 }

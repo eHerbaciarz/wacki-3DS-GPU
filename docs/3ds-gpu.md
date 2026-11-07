@@ -42,6 +42,20 @@ Włączone domyślnie. Przełącza je pierwszy przycisk ekranu **Grafika**
 (`s_opt_gfx1` / `video_mode`, „lepsza grafika”) — ten sam, który włącza
 efekt oświetlenia; zmiana działa od razu i zapisuje się z opcjami.
 
+## Filtry
+
+- **Kolory** (wszystkie konsole, liczone na palecie — praktycznie za darmo):
+  0 oryginalne, 1 żywe (domyślnie na 3DS — ekrany są blade), 2 bardzo
+  żywe, 3 jaśniejsze. **SELECT+Y** przełącza (podpowiedź u góry ekranu),
+  `wacki.cfg`: `color_filter=`.
+- **Zoom dolnego ekranu** (2×/4×, przycisk X): 0 ostry, 1 gładki, 2 Scale2x
+  (domyślnie), 3 2xSaI, 4 xBR. **SELECT+X** przełącza, `wacki.cfg`:
+  `zoom_filter=`. Scale2x/2xSaI/xBR liczy CPU tylko dla widocznego wycinka;
+  xBR jest najładniejszy i najdroższy (na hoście ~0,7 ms na wycinek,
+  na 3DS szacunkowo ~10 ms) — sprawdzić `draw` w `wacki_perf.log`.
+- **SELECT sam** dalej przełącza tryb ramion (L/ZL ↔ R/ZR), ale teraz po
+  puszczeniu i tylko gdy nie użyto kombinacji.
+
 ## Log wydajności
 
 `sdmc:/3ds/wacki/wacki_perf.log`, nadpisywany przy każdym uruchomieniu.
@@ -107,3 +121,6 @@ tools/build-3ds-cia.sh              # dist/wacki.cia z dist/wacki
 - [ ] Wyjście z gry (HOME → zamknij): bez zawieszenia (wątek logu się
       kończy).
 - [ ] .cia instaluje się i działa jak .3dsx.
+- [ ] Filtry: SELECT+Y kolory (podpowiedź, zapis po restarcie), SELECT+X
+      filtr zoomu przy zoomie 2×/4× (X); xBR — FPS i `draw` w logu;
+      sam SELECT dalej zmienia tryb ramion.

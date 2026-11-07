@@ -255,6 +255,19 @@ void           SubtitlesFilmEnd(void);
 const uint8_t *SubtitlesComposeFrame(const uint8_t *shadow, const uint8_t *pal,
                                      int w, int h);
 
+/* ---- util/color_filter.c, util/pixel_filters.c: picture filters ---- */
+#define COLOR_FILTER_COUNT 4      /* oryginalne, żywe, bardzo żywe, jaśniejsze */
+extern int     g_color_filter;    /* wacki.cfg color_filter; -1 = default   */
+int            ColorFilterMode(void);
+const char    *ColorFilterName(int mode);           /* UTF-8, Polish */
+void           ColorFilterApply(int mode, const uint8_t *in768, uint8_t *out768);
+const uint8_t *ColorFilterPalette(const uint8_t *pal);   /* cached */
+void           ColorFilterCycle(void);              /* + saves, shows a hint */
+
+enum { PIXF_SCALE2X = 1, PIXF_SAI2X = 2, PIXF_XBR2X = 3 };
+/* 0x00RRGGBB src w×h → out (2w)×(2h). */
+void           PixelUpscale2x(int kind, const uint32_t *src, int w, int h, uint32_t *out);
+
 /* ---- archive.c / depack.c ---------------------------------------- */
 
 int  OpenDtaArchiveFile(const char *path);

@@ -402,6 +402,13 @@ void platform_video_get_present_state(int *stretch_active,
     *fb_h = s_fb_h;
 }
 
+/* Zoom filters (Scale2x/xBR…) exist only in the GPU backend
+ * (video_3ds_c3d.c); SELECT+X here just says so. */
+void platform_video_cycle_zoom_filter(void)
+{
+    SubtitlesHint("Filtr zoomu: tylko w wersji GPU", 2000);
+}
+
 void platform_video_toggle_aspect_mode(void)
 {
     extern char g_aspect_mode[16];

@@ -359,3 +359,7 @@ void vm_stubs_reset(void)
  * part of the test build. */
 char g_data_root[260]   = "";
 int  g_cutscene_playing = 0;
+
+/* util/color_filter.c's ColorFilterCycle saves wacki.cfg; config.c is not
+ * part of the test build. */
+void ConfigSave(void) {}

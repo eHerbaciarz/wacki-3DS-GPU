@@ -84,6 +84,7 @@ static int s_touch_was_down = 0;
 extern void platform_video_cycle_zoom(void);
 /* video_3ds_gl.c: toggles top-screen aspect ratio stretch<->4:3 (Y button). */
 extern void platform_video_toggle_aspect_mode(void);
+extern void platform_video_cycle_zoom_filter(void);   /* video_3ds_c3d.c */
 /* video_3ds_gl.c: inverts the exact zoom-crop region last drawn to the
  * bottom screen — see this file's touch-handling comment above and
  * video_3ds_gl.c's own comment on indexed_to_rgba_zoom for why the
@@ -114,16 +115,33 @@ void platform_pad_handle_buttons(void)
     if (down & KEY_A) g_lmb_clicked = 1;
     /* Physical B = right click. */
     if (down & KEY_B) g_rmb_clicked = 1;
-    /* Physical X = cycle bottom-screen zoom. */
-    if (down & KEY_X) platform_video_cycle_zoom();
+    /* SELECT is a modifier: SELECT+Y = colour filter, SELECT+X = zoom
+     * filter (each shows a hint and is saved in wacki.cfg). SELECT on
+     * its own still toggles the shoulder hand-mode — now on RELEASE, and
+     * only if no combo was used while it was held. */
+    static int s_select_combo = 0;
+    int select_held = (held & KEY_SELECT) != 0;
+    if (down & KEY_SELECT) s_select_combo = 0;
+
+    if (select_held && (down & KEY_Y)) {
+        ColorFilterCycle();
+        s_select_combo = 1;
+    } else if (down & KEY_Y) {
+        /* Physical Y = top-screen aspect: 4:3 <-> fill (cropped). */
+        platform_video_toggle_aspect_mode();
+    }
+    if (select_held && (down & KEY_X)) {
+        platform_video_cycle_zoom_filter();
+        s_select_combo = 1;
+    } else if (down & KEY_X) {
+        /* Physical X = cycle bottom-screen zoom. */
+        platform_video_cycle_zoom();
+    }
 
     if (down & KEY_START) g_pause_menu_request = 1;
-    /* Physical Y = toggle top-screen aspect ratio (stretch <-> 4:3). */
-    if (down & KEY_Y) platform_video_toggle_aspect_mode();
-    /* SELECT toggles the shoulder hand-mode — swaps which pair
-     * (L/ZL vs. R/ZR) does mouse clicks vs. quicksave/load.
-     * Y previously also triggered this; freed up for aspect toggle. */
-    if (down & KEY_SELECT) {
+    /* Shoulder hand-mode (which pair — L/ZL or R/ZR — clicks vs.
+     * quicksave/load): SELECT pressed and released with no combo. */
+    if ((hidKeysUp() & KEY_SELECT) && !s_select_combo) {
         s_hand_mode = (s_hand_mode == HAND_MODE_LEFT) ? HAND_MODE_RIGHT : HAND_MODE_LEFT;
         LOG_INFO("3ds", "hand_mode=%s", s_hand_mode == HAND_MODE_LEFT ? "left" : "right");
     }
