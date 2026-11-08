@@ -12,6 +12,7 @@
  *   color_filter=-1..3           — filtr kolorów (util/color_filter.c)
  *   zoom_filter=-1..4            — filtr zoomu dolnego ekranu 3DS
  *   smoothing=-1|0|1             — PC: wygładzanie obrazu (F3)
+ *   wide_top=-1|0|1              — 3DS: górny ekran 800 px (SELECT+START)
  *
  * g_aspect_mode i g_touch_mode są zdefiniowane tutaj (nie w video_sdl.c /
  * platform_sdl.c) aby były dostępne dla WSZYSTKICH targetów przez linkowanie
@@ -32,6 +33,7 @@ extern int  g_subtitles_speakers;
 extern int  g_subtitles_sounds;
 int         g_zoom_filter = -1;     /* 3DS bottom-screen zoom; -1 = default */
 int         g_smoothing   = -1;     /* PC smoothing: -1 = --scale-mode / default */
+int         g_wide_top    = -1;     /* 3DS 800-px top screen: -1 = default (on) */
 
 /* Zdefiniowane tutaj — dostępne dla wszystkich targetów. */
 char g_aspect_mode[16] = "stretch";
@@ -90,6 +92,8 @@ void ConfigLoad(void)
             g_zoom_filter = (v >= 0 && v < 5) ? v : -1;
         else if (sscanf(line,"smoothing=%d",&v)==1)
             g_smoothing = v < 0 ? -1 : (v ? 1 : 0);
+        else if (sscanf(line,"wide_top=%d",&v)==1)
+            g_wide_top = v < 0 ? -1 : (v ? 1 : 0);
     }
     fclose(fp);
     LOG_INFO("config","loaded: fullscreen=%d scale=%d aspect=%s touch=%s",
@@ -118,6 +122,8 @@ void ConfigSave(void)
     fprintf(fp,"zoom_filter=%d\n", g_zoom_filter);
     fprintf(fp,"# PC: wygladzanie obrazu (F3): 1 tak, 0 nie, -1 domyslne\n");
     fprintf(fp,"smoothing=%d\n", g_smoothing);
+    fprintf(fp,"# 3DS: gorny ekran 800 px (ostrzejszy, bez 3D): 1 tak, 0 nie\n");
+    fprintf(fp,"wide_top=%d\n", g_wide_top);
     fclose(fp);
     LOG_INFO("config","saved: fullscreen=%d scale=%d aspect=%s touch=%s",
              g_fullscreen,g_scale_factor?g_scale_factor:1,g_aspect_mode,g_touch_mode);

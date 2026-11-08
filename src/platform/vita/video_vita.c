@@ -21,9 +21,12 @@
  *     avoids tearing/garbage in the picture;
  *   - frames identical to the previous one (frame, palette, mode) are not
  *     drawn again at all; the screen keeps showing the last one;
- *   - smoothing (linear filtering) on by default, following the FIRST
- *     button of the Grafika menu (s_opt_gfx1 / video_mode) like the 3DS
- *     GPU backend; it changes the moment the button is clicked;
+ *   - smoothing on by default, following the FIRST button of the
+ *     Grafika menu (s_opt_gfx1 / video_mode) like the 3DS GPU backend;
+ *     it is "sharp bilinear": the frame first doubled exactly (nearest,
+ *     into a 1280×960 GPU target), then scaled to the screen linearly —
+ *     smooth edges without the blur plain linear gives at 1.13×. All on
+ *     the GPU. (Falls back to plain linear if the target can't be made.)
  *   - 4:3 (725×544, centred, black bars) or stretch (960×544), as before
  *     (Y button / F7); touch maps through the same rectangle
  *     (vita_video_touch_to_game, used by touch_vita.c);
@@ -56,6 +59,8 @@ static uint8_t       s_prev_pal[256 * 3];
 static int           s_have_prev = 0;
 static int           s_smooth = -1;
 static SDL_Rect      s_game_rect = { 0, 0, SCREEN_W, SCREEN_H };
+static SDL_Texture  *s_sharp = NULL;     /* 2× target for sharp bilinear */
+static int           s_sharp_failed = 0;
 
 extern char g_aspect_mode[16];
 
@@ -129,17 +134,33 @@ unsigned plat_video_sdl_init_flags(void)
 static void set_state_note(void)
 {
     char note[96];
-    snprintf(note, sizeof note, "gpu smooth=%d aspect=%s", s_smooth,
+    snprintf(note, sizeof note, "gpu smooth=%d%s aspect=%s", s_smooth,
+             (s_smooth && s_sharp) ? " sharp-bilinear" : "",
              g_aspect_mode[0] == '4' ? "4:3" : "stretch");
     perf_log_set_state(note);
 }
 
+/* Smoothing = sharp bilinear: the frame textures are always sampled
+ * nearest (exact 2× into s_sharp), s_sharp linearly to the screen. If
+ * s_sharp can't be made, plain linear on the frame textures. */
 static void apply_smooth(int on)
 {
+    if (on && !s_sharp && !s_sharp_failed) {
+        s_sharp = SDL_CreateTexture(s_ren, SDL_PIXELFORMAT_ABGR8888,
+                                    SDL_TEXTUREACCESS_TARGET, s_fb_w * 2, s_fb_h * 2);
+        if (s_sharp) {
+            SDL_SetTextureScaleMode(s_sharp, SDL_ScaleModeLinear);
+            perf_log_msg("gpu: sharp bilinear (%dx%d target)", s_fb_w * 2, s_fb_h * 2);
+        } else {
+            s_sharp_failed = 1;
+            perf_log_msg("gpu: no 2x target (%s) - plain linear", SDL_GetError());
+        }
+    }
+    int frame_linear = on && !s_sharp;
     for (int i = 0; i < NUM_TEX; ++i)
         if (s_tex[i])
-            SDL_SetTextureScaleMode(s_tex[i], on ? SDL_ScaleModeLinear
-                                                 : SDL_ScaleModeNearest);
+            SDL_SetTextureScaleMode(s_tex[i], frame_linear ? SDL_ScaleModeLinear
+                                                           : SDL_ScaleModeNearest);
 }
 
 int plat_video_init(int w, int h, const char *title)
@@ -265,9 +286,17 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
         if (!s_logged) { LOG_ERROR("vita", "SDL_LockTexture: %s", SDL_GetError()); s_logged = 1; }
     }
 
-    SDL_SetRenderDrawColor(s_ren, 0, 0, 0, 255);
-    SDL_RenderClear(s_ren);
-    SDL_RenderCopy(s_ren, s_tex[s_cur], NULL, &s_game_rect);
+    if (s_smooth && s_sharp && SDL_SetRenderTarget(s_ren, s_sharp) == 0) {
+        SDL_RenderCopy(s_ren, s_tex[s_cur], NULL, NULL);     /* exact 2×  */
+        SDL_SetRenderTarget(s_ren, NULL);
+        SDL_SetRenderDrawColor(s_ren, 0, 0, 0, 255);
+        SDL_RenderClear(s_ren);
+        SDL_RenderCopy(s_ren, s_sharp, NULL, &s_game_rect);  /* linear    */
+    } else {
+        SDL_SetRenderDrawColor(s_ren, 0, 0, 0, 255);
+        SDL_RenderClear(s_ren);
+        SDL_RenderCopy(s_ren, s_tex[s_cur], NULL, &s_game_rect);
+    }
     uint64_t t1 = perf_now();
     SDL_RenderPresent(s_ren);
     uint64_t t2 = perf_now();
@@ -283,6 +312,7 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
 
 void plat_video_shutdown(void)
 {
+    if (s_sharp) { SDL_DestroyTexture(s_sharp); s_sharp = NULL; }
     for (int i = 0; i < NUM_TEX; ++i)
         if (s_tex[i]) { SDL_DestroyTexture(s_tex[i]); s_tex[i] = NULL; }
     if (s_ren) { SDL_DestroyRenderer(s_ren); s_ren = NULL; }

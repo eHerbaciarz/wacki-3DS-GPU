@@ -44,6 +44,12 @@ efekt oświetlenia; zmiana działa od razu i zapisuje się z opcjami.
 
 ## Filtry
 
+- **Górny ekran 800 px** (domyślnie włączony): górny ekran 3DS umie
+  pokazać 800 kolumn zamiast 400, gdy 3D jest wyłączone. Obraz 4:3 zajmuje
+  wtedy dokładnie 640 z nich — klatka 1:1 w poziomie, pomniejszona tylko
+  w pionie — więc tekst i kontury są wyraźnie ostrzejsze, bez kosztu.
+  Przy podniesionym suwaku 3D gra sama wraca do 400 px; na oryginalnym
+  2DS niedostępny. **SELECT+START** przełącza, `wacki.cfg`: `wide_top=`.
 - **Kolory** (wszystkie konsole, liczone na palecie — praktycznie za darmo):
   0 oryginalne, 1 żywe (domyślnie na 3DS — ekrany są blade), 2 bardzo
   żywe, 3 jaśniejsze. **SELECT+Y** przełącza (podpowiedź u góry ekranu),
@@ -131,6 +137,9 @@ tools/build-3ds-cia.sh              # dist/wacki.cia z dist/wacki
 - [ ] Wyjście z gry (HOME → zamknij): bez zawieszenia (wątek logu się
       kończy).
 - [ ] .cia instaluje się i działa jak .3dsx.
+- [ ] Górny ekran 800 px: ostrzejszy obraz przy suwaku 3D w dół; podniesienie
+      suwaka → 3D (400 px), opuszczenie → znów 800 px; 4:3 i wypełnienie;
+      SELECT+START wyłącza/włącza (podpowiedź).
 - [ ] Filtry: SELECT+Y kolory (podpowiedź, zapis po restarcie), SELECT+X
       filtr zoomu przy zoomie 2×/4× (X); xBR — FPS i `draw` w logu;
       sam SELECT dalej zmienia tryb ramion.

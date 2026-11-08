@@ -409,6 +409,11 @@ void platform_video_cycle_zoom_filter(void)
     SubtitlesHint("Filtr zoomu: tylko w wersji GPU", 2000);
 }
 
+void platform_video_toggle_wide(void)
+{
+    SubtitlesHint("G\xC3\xB3rny ekran 800 px: tylko w wersji GPU", 2000);
+}
+
 void platform_video_toggle_aspect_mode(void)
 {
     extern char g_aspect_mode[16];

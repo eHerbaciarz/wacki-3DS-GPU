@@ -171,6 +171,19 @@ enum { QUAD_TOP_L = 0, QUAD_TOP_R = 1, QUAD_BOT = 2, QUAD_COUNT = 3 };
 
 static C3D_RenderTarget *s_rt_top[2]; /* left, right eye */
 static C3D_RenderTarget *s_rt_bot;
+
+/* WIDE TOP SCREEN (800 px): the 3DS top screen can show 800 columns
+ * instead of 400 when stereo 3D is off (gfxSetWide). The 4:3 picture is
+ * then exactly 640 of those columns — the frame 1:1 across, only halved
+ * in height — so text and outlines are much sharper, for no GPU cost.
+ * On by default (wacki.cfg wide_top=, SELECT+START toggles); off by
+ * itself while the 3D slider is up, and never on an original 2DS (no
+ * wide mode there). Its own 240×800 render target. */
+#define WIDE_WIDTH 800
+extern int g_wide_top;                    /* config.c; -1 = default (on) */
+static C3D_RenderTarget *s_rt_wide;
+static int s_wide_supported = 1;
+static int s_wide_active    = 0;
 static DVLB_s          *s_dvlb;
 static shaderProgram_s  s_prog;
 static int              s_u_proj = -1;
@@ -371,6 +384,16 @@ static int gpu_init(void)
     s_rt_top[0] = C3D_RenderTargetCreate(TOP_HEIGHT, TOP_WIDTH, GPU_RB_RGBA8, NO_DEPTH);
     s_rt_top[1] = C3D_RenderTargetCreate(TOP_HEIGHT, TOP_WIDTH, GPU_RB_RGBA8, NO_DEPTH);
     s_rt_bot    = C3D_RenderTargetCreate(BOT_HEIGHT, BOT_WIDTH, GPU_RB_RGBA8, NO_DEPTH);
+    s_rt_wide   = C3D_RenderTargetCreate(TOP_HEIGHT, WIDE_WIDTH, GPU_RB_RGBA8, NO_DEPTH);
+    if (!s_rt_wide) perf_log_msg("gpu: no memory for the 800-px top target — wide mode off");
+    {   /* the original 2DS has no wide mode */
+        u8 model = 0;
+        if (R_SUCCEEDED(cfguInit())) {
+            if (R_SUCCEEDED(CFGU_GetSystemModel(&model)) && model == CFG_MODEL_2DS)
+                s_wide_supported = 0;
+            cfguExit();
+        }
+    }
     if (!s_rt_top[0] || !s_rt_top[1] || !s_rt_bot) {
         LOG_ERROR("3ds-gpu", "render targets not created");
         return 0;
@@ -507,6 +530,24 @@ void platform_video_cycle_zoom_filter(void)
     perf_log_msg("zoom filter: %d", g_zoom_filter);
 }
 
+/* SELECT+START (gamepad_3ds.c): wide 800-px top screen on/off. */
+void platform_video_toggle_wide(void)
+{
+    extern void ConfigSave(void);
+    int on = (g_wide_top != 0);
+    g_wide_top = on ? 0 : 1;
+    ConfigSave();
+    const char *msg;
+    if (!s_wide_supported)
+        msg = "G\xC3\xB3rny ekran 800 px: niedost\xC4\x99pny na tej konsoli (2DS)";
+    else if (g_wide_top && osGet3DSliderState() > 0.0f)
+        msg = "G\xC3\xB3rny ekran 800 px: w\xC5\x82\xC4\x85""czony (dzia\xC5\x82""a przy suwaku 3D w d\xC3\xB3\xC5\x82)";
+    else
+        msg = g_wide_top ? "G\xC3\xB3rny ekran 800 px: w\xC5\x82\xC4\x85""czony (ostrzejszy)"
+                         : "G\xC3\xB3rny ekran 800 px: wy\xC5\x82\xC4\x85""czony";
+    SubtitlesHint(msg, 2500);
+}
+
 static void gpu_shutdown(void)
 {
     if (!s_c3d_up) return;
@@ -523,6 +564,8 @@ static void gpu_shutdown(void)
     for (int i = 0; i < 2; ++i)
         if (s_rt_top[i]) { C3D_RenderTargetDelete(s_rt_top[i]); s_rt_top[i] = NULL; }
     if (s_rt_bot) { C3D_RenderTargetDelete(s_rt_bot); s_rt_bot = NULL; }
+    if (s_rt_wide) { C3D_RenderTargetDelete(s_rt_wide); s_rt_wide = NULL; }
+    if (s_wide_active) { gfxSetWide(false); s_wide_active = 0; }
     if (s_dvlb) {
         shaderProgramFree(&s_prog);
         DVLB_Free(s_dvlb);
@@ -604,7 +647,8 @@ static void update_state_note(int smooth, int stereo)
     extern char g_aspect_mode[16];
     char note[96];
     int  zoom = ZOOM_LEVELS[g_zoom_level];
-    snprintf(note, sizeof note, "gpu smooth=%d aspect=%s zoom=%s%s", smooth,
+    snprintf(note, sizeof note, "gpu smooth=%d%s aspect=%s zoom=%s%s", smooth,
+             s_wide_active ? " wide800" : "",
              g_aspect_mode[0] == '4' ? "4:3" : "fill",
              zoom == 1 ? "1x" : zoom == 2 ? "2x" : zoom == 4 ? "4x" : "full",
              stereo ? " 3d" : "");
@@ -699,7 +743,20 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
             g_stereo3d_bg_layer_wanted = 0;
         }
     }
-    gfxSet3D(stereo_enabled);
+    /* Wide (800 px) top screen when allowed; stereo and wide exclude
+     * each other (gfxSet3D / gfxSetWide set the same mode). Switching
+     * re-links the top screen's output to the matching render target —
+     * done here, outside a frame. */
+    int wide_now = (g_wide_top != 0) && s_wide_supported && s_rt_wide && !stereo_enabled;
+    if (wide_now != s_wide_active) {
+        C3D_RenderTargetSetOutput(wide_now ? s_rt_wide : s_rt_top[0],
+                                  GFX_TOP, GFX_LEFT, DISPLAY_TRANSFER_FLAGS);
+        s_wide_active = wide_now;
+        top_dirty = 1;
+        perf_log_msg("gpu: top screen %s", wide_now ? "800 px (wide)" : "400 px");
+    }
+    if (wide_now) gfxSetWide(true);
+    else          gfxSet3D(stereo_enabled);
 
     if (stereo_enabled != s_prev_stereo_enabled) {
         LOG_INFO("3ds", "stereo 3D %s (slider=%d%%)",
@@ -826,8 +883,12 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
         g_bg_layer_valid = 0;
     }
 
-    float tx0 = use_43 ? (float)TOP_43_X : 0.0f;
-    float tx1 = use_43 ? (float)(TOP_43_X + TOP_43_W) : (float)TOP_WIDTH;
+    /* top screen width in its own pixels: 400, or 800 in wide mode (then
+     * 4:3 = 640 columns: the frame 1:1 across) */
+    int   top_w = s_wide_active ? WIDE_WIDTH : TOP_WIDTH;
+    int   w43   = s_wide_active ? TOP_43_W * 2 : TOP_43_W;
+    float tx0 = use_43 ? (float)((top_w - w43) / 2) : 0.0f;
+    float tx1 = use_43 ? (float)((top_w - w43) / 2 + w43) : (float)top_w;
     float sy0 = use_43 ? 0.0f : s_fill_y;
     float sy1 = use_43 ? (float)h : s_fill_y + (float)fill_h;
     set_quad(QUAD_TOP_L, tx0, 0.0f, tx1, (float)TOP_HEIGHT, 0.0f, sy0, (float)w, sy1);
@@ -838,7 +899,8 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
     GSPGPU_FlushDataCache(s_vbuf, sizeof(Vtx) * QUAD_COUNT * 4);
 
     if (top_redraw) {
-        draw_on(s_rt_top[0], TOP_WIDTH, TOP_HEIGHT, &s_tex[0], QUAD_TOP_L);
+        draw_on(s_wide_active ? s_rt_wide : s_rt_top[0], top_w, TOP_HEIGHT,
+                &s_tex[0], QUAD_TOP_L);
         if (stereo_enabled) {
             /* Without a background snapshot this frame (menus paint and
              * present directly), both eyes get the same flat picture. */

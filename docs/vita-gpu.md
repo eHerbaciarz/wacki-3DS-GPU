@@ -20,9 +20,12 @@ własny `src/platform/vita/video_vita.c` (desktop/Switch/handheldy bez zmian).
   pamięć tekstury bez czekania, a przy wyłączonym vsync GPU może jeszcze
   czytać poprzednią — pisanie do drugiej usuwa ryzyko śmieci/rwania.
 - **Pomijanie identycznych klatek** (obraz, paleta, tryb) — ekran zostaje.
-- **Wygładzanie** (liniowe) domyślnie włączone, przełączane pierwszym
-  przyciskiem ekranu **Grafika** (`s_opt_gfx1` / `video_mode`), tak jak na
-  3DS; działa od razu.
+- **Wygładzanie** domyślnie włączone, przełączane pierwszym przyciskiem
+  ekranu **Grafika** (`s_opt_gfx1` / `video_mode`), tak jak na 3DS. To
+  **„ostre wygładzanie”**: klatka najpierw dokładnie podwojona (najbliższy
+  sąsiad, do tekstury 1280×960 w GPU), potem płynnie zmniejszona do ekranu
+  — gładkie krawędzie bez rozmycia, jakie daje zwykłe liniowe przy 1,13×.
+  Całość w GPU.
 - **4:3 / stretch** jak dotąd (przycisk Y / F7): 4:3 = 725×544 na środku.
   **Dotyk** (tryb absolute) liczony przez ten sam prostokąt — wcześniej w
   4:3 cały panel był mapowany na całą grę mimo czarnych pasów.

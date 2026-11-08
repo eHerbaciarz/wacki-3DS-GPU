@@ -85,6 +85,7 @@ extern void platform_video_cycle_zoom(void);
 /* video_3ds_gl.c: toggles top-screen aspect ratio stretch<->4:3 (Y button). */
 extern void platform_video_toggle_aspect_mode(void);
 extern void platform_video_cycle_zoom_filter(void);   /* video_3ds_c3d.c */
+extern void platform_video_toggle_wide(void);
 /* video_3ds_gl.c: inverts the exact zoom-crop region last drawn to the
  * bottom screen — see this file's touch-handling comment above and
  * video_3ds_gl.c's own comment on indexed_to_rgba_zoom for why the
@@ -138,7 +139,12 @@ void platform_pad_handle_buttons(void)
         platform_video_cycle_zoom();
     }
 
-    if (down & KEY_START) g_pause_menu_request = 1;
+    if (select_held && (down & KEY_START)) {
+        platform_video_toggle_wide();      /* SELECT+START: 800-px top screen */
+        s_select_combo = 1;
+    } else if (down & KEY_START) {
+        g_pause_menu_request = 1;
+    }
     /* Shoulder hand-mode (which pair — L/ZL or R/ZR — clicks vs.
      * quicksave/load): SELECT pressed and released with no combo. */
     if ((hidKeysUp() & KEY_SELECT) && !s_select_combo) {
