@@ -4,6 +4,12 @@
 # empty (see the main Makefile's `include mk/$(TGT).mk`).
 BIN_NAME := wacki
 
+# Without data/WACKI.EXE at build time: an empty table, and the program reads
+# WACKI.EXE from the player's game folder at start (hooks_desktop.c).
+ifeq ($(wildcard data/WACKI.EXE),)
+    EMBEDDED_PE_SRC := src/platform/sdl/embedded_wacki_pe_stub.c
+endif
+
 # STATIC_SDL2=1 → fully self-contained binary: SDL2 + its transitive system
 # links baked in, so the user needs no libSDL2 installed (CI release path). The
 # default (=0) keeps the dev build dynamic for fast iteration + easier debugging.

@@ -62,3 +62,4 @@ ANALYSIS/
 # tools/napisy: katalog roboczy (rozpakowane dane gry, przepisane nagrania)
 napisy_praca/
 __pycache__/
+dist-win/
