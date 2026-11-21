@@ -58,3 +58,11 @@ ANALYSIS/
 .vscode/
 .claude/
 *.swp
+
+# tools/napisy: katalog roboczy (rozpakowane dane gry, przepisane nagrania)
+napisy_praca/
+__pycache__/
+dist-win/
+dist-lin/
+dist-32/
+dist-asan/

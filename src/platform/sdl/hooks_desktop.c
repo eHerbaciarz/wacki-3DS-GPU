@@ -18,6 +18,9 @@
 #include "wacki/platform/video.h"    /* plat_apply_video_prefs */
 
 #include <SDL.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 void plat_restore_system_volume(void)            { }
 int  plat_handle_platform_key(int sym)           { (void)sym; return 0; }
@@ -31,8 +34,47 @@ int  plat_input_has_keyboard(void)               { return 1; }
  * mode forced on the CLI/env) ask once which mode to use and persist it.
  * Runs before the window is created (a standalone NULL-parent message box is
  * fine), and sets g_fullscreen / g_scale_factor that plat_video_init reads. */
+/* A build without data/WACKI.EXE baked in (src/platform/sdl/
+ * embedded_wacki_pe_stub.c, e.g. a cross-built .exe that can't ship the
+ * game's own file) reads WACKI.EXE from the player's game folder at start,
+ * like the console ports do. */
+extern const int g_wacki_pe_slice_count;
+extern char      g_data_root[260];
+
+static int try_exe_in(const char *dir)
+{
+    extern int PeLoaderInit(const char *path);
+    static const char *const names[] = { "WACKI.EXE", "wacki.exe", "Wacki.exe",
+                                         "../WACKI.EXE", "../wacki.exe",
+                                         "data/WACKI.EXE", "data/wacki.exe" };
+    char path[600];
+    for (size_t i = 0; i < SDL_arraysize(names); ++i) {
+        size_t n = strlen(dir);
+        snprintf(path, sizeof path, "%s%s%s", dir,
+                 (n && (dir[n-1] == '/' || dir[n-1] == '\\')) ? "" : "/", names[i]);
+        if (PeLoaderInit(path)) return 1;
+    }
+    return 0;
+}
+
+static void load_wacki_exe_dynamic(void)
+{
+    if (g_wacki_pe_slice_count > 0) return;          /* embedded: done */
+    if (g_data_root[0] && try_exe_in(g_data_root)) return;
+    char *base = SDL_GetBasePath();
+    int ok = base && try_exe_in(base);
+    SDL_free(base);
+    if (ok || try_exe_in(".")) return;
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Wacki",
+        "Nie znalaz\xC5\x82""em pliku WACKI.EXE z gry.\n"
+        "Po\xC5\x82\xC3\xB3\xC5\xBC go obok programu albo w folderze z danymi gry.",
+        NULL);
+    exit(1);
+}
+
 void plat_apply_video_prefs(void)
 {
+    load_wacki_exe_dynamic();
     extern int  g_config_first_run;
     extern void ConfigSave(void);
     if (!(g_config_first_run && g_fullscreen == 0 && g_scale_factor == 0))

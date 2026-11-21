@@ -354,5 +354,5 @@ $(DIST)/run-tests-asan$(EXE): $(TEST_SRCS) $(TEST_ENGINE_SRCS) | $(DIST)
 # the generated embed source, and stray .o files from ad-hoc compiles.
 clean:
 	rm -rf $(DIST)
-	rm -f $(EMBEDDED_PE_SRC)
+	rm -f src/embedded_wacki_pe.c
 	rm -f *.o src/*.o tools/*.o tests/*.o
