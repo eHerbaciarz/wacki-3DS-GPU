@@ -63,3 +63,4 @@ ANALYSIS/
 napisy_praca/
 __pycache__/
 dist-win/
+dist-lin/
