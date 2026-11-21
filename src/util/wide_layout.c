@@ -62,6 +62,15 @@ static uint32_t s_last_ms;
 static int      s_cur_y;            /* cursor row this frame              */
 static int      s_scr_w = 0, s_scr_h = 0;
 
+/* 16:10 within ~1.5%: the scene (640x400) fills the screen exactly. */
+static int screen_is_16_10(int w, int h)
+{
+    if (w <= 0 || h <= 0) return 0;
+    long d = (long)w * 10 - (long)h * 16;
+    if (d < 0) d = -d;
+    return d * 1000 <= (long)h * 16 * 15;
+}
+
 int WideAspectMode(void)
 {
     if (g_aspect_mode[0] == '4') return WIDE_OFF;
@@ -75,8 +84,15 @@ void WideAspectCycle(void)
     const char *msg;
     switch (WideAspectMode()) {
     case WIDE_CROP:
-        strncpy(g_aspect_mode, "wide-bars", 15);
-        msg = "Obraz: panorama z paskami po bokach";
+        if (screen_is_16_10(s_scr_w, s_scr_h)) {
+            /* 16:10 (Steam Deck 1280x800, many laptops): the 640x400 scene
+             * fits exactly — crop and bars are the same picture, skip one */
+            strncpy(g_aspect_mode, "4:3", 15);
+            msg = "Obraz: oryginalny 4:3";
+        } else {
+            strncpy(g_aspect_mode, "wide-bars", 15);
+            msg = "Obraz: panorama z paskami po bokach";
+        }
         break;
     case WIDE_BARS:
         strncpy(g_aspect_mode, "4:3", 15);
@@ -84,7 +100,9 @@ void WideAspectCycle(void)
         break;
     default:
         strncpy(g_aspect_mode, "wide", 15);
-        msg = "Obraz: panorama (przyci\xC4\x99ta)";
+        msg = screen_is_16_10(s_scr_w, s_scr_h)
+            ? "Obraz: panorama 16:10 (ca\xC5\x82""a scena)"
+            : "Obraz: panorama (przyci\xC4\x99ta)";
         break;
     }
     g_aspect_mode[15] = '\0';

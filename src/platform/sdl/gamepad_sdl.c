@@ -23,6 +23,7 @@
 #include "wacki.h"
 #include "wacki/log.h"
 #include "wacki/platform/input.h"   /* plat_pad_read_extra */
+#include "wacki/api.h"              /* ColorFilterCycle */
 #include "sdl_internal.h"           /* platform_pad_* declarations */
 
 #include <SDL.h>
@@ -71,6 +72,10 @@ int platform_pad_handle_event(const SDL_Event *ev)
         case SDL_CONTROLLER_BUTTON_START:         g_pause_menu_request = 1; break;
         case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:  g_quickload_request  = 1; break;
         case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: g_quicksave_request  = 1; break;
+        /* like the Vita: Y = picture (panorama / bars / 4:3, = F7),
+         * BACK/View = colour filter (= F1) — no F keys on a Steam Deck */
+        case SDL_CONTROLLER_BUTTON_Y:             platform_video_toggle_aspect_mode(); break;
+        case SDL_CONTROLLER_BUTTON_BACK:          ColorFilterCycle(); break;
         default: return 0;
         }
         return 1;

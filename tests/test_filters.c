@@ -184,6 +184,29 @@ TEST(wide_layout_bars_panel_and_off)
     wide_reset();
 }
 
+TEST(wide_layout_16_10_steam_deck)
+{
+    WideRect r;
+    wide_reset();
+    WideLayoutSetScreen(1280, 800);
+    wide_frame("wide", 100, 1);
+    ASSERT_TRUE(WideLayoutGet(1280, 800, &r));
+    ASSERT_TRUE(r.scale > 1.99f && r.scale < 2.01f);      /* exact 2x    */
+    ASSERT_TRUE(r.src_y < 0.01f && r.src_h > 399.9f);     /* whole scene */
+    ASSERT_TRUE(r.dst_x < 0.01f && r.dst_w > 1279.9f && r.dst_h > 799.9f);
+    /* panel in: the scene moves up, still full screen */
+    wide_reset();
+    wide_frame("wide", 470, 1);
+    ASSERT_TRUE(WideLayoutGet(1280, 800, &r));
+    ASSERT_TRUE(r.src_y + r.src_h > 470.0f);
+    /* the button skips the identical "bars" step on 16:10 */
+    strcpy(g_aspect_mode, "wide");
+    WideAspectCycle(); ASSERT_STREQ(g_aspect_mode, "4:3");
+    WideAspectCycle(); ASSERT_STREQ(g_aspect_mode, "wide");
+    WideLayoutSetScreen(1280, 720);
+    wide_reset();
+}
+
 TEST(wide_layout_3ds_top_screen)
 {
     WideRect r;
@@ -208,4 +231,5 @@ SUITE(filters)
     RUN_TEST(wide_layout_crop_and_mapping);
     RUN_TEST(wide_layout_bars_panel_and_off);
     RUN_TEST(wide_layout_3ds_top_screen);
+    RUN_TEST(wide_layout_16_10_steam_deck);
 }
