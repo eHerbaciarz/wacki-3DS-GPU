@@ -18,6 +18,16 @@ są rysowane we wspólnym kodzie, przed wysłaniem klatki na ekran).
   nie używał). Ma oryginalną ikonę, więc po najechaniu kursorem u góry
   ekranu pojawia się „Napisy dla niesłyszących: włączone/wyłączone” (i
   ostrzeżenie, jeśli brakuje pliku napisów). Zapis w `wacki.cfg`.
+- **Ucho i flagi** w menu Solund, pod przyciskami gry (gdy brak tam
+  miejsca — nad nimi):
+  - **ucho z dłonią** = napisy dla niesłyszących włącz/wyłącz (to samo co
+    piąty przycisk); wyłączone ma czerwony przekreślnik;
+  - **flagi** = po jednej na każdy plik `napisy/<kod>.txt` obok danych
+    gry; kliknięcie od razu wczytuje napisy w tym języku i zapisuje wybór
+    (`subtitles_lang`). Wybrana ma żółtą ramkę, reszta jest przyciemniona.
+    Flagi są dla: pl, en/gb, de, fr, es, it, cs/cz, sk, uk/ua, ru, hu, pt,
+    nl, sv/se; inny kod dostaje szarą flagę z napisem kodu.
+  Gra nie ma do tego grafik, więc ikony rysuje port (`src/menu/subs_icons.c`).
 - **Dialog:** tekst na dole obrazu (nad panelem w grze), przez całą
   kwestię. Z wyłączonym głosem kwestia zostaje na ekranie tyle, ile trzeba
   na przeczytanie (albo do kliknięcia).

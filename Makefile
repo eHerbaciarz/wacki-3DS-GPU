@@ -125,6 +125,7 @@ ENGINE_SRCS = \
 	src/anim/paint_primitives.c src/anim/alpha_blit.c             \
 	src/menu/chapter_select.c src/menu/slot_picker.c                 \
 	src/menu/options.c        src/menu/menu_loop.c                   \
+	src/menu/subs_icons.c                                            \
 	src/menu/main_menu.c      src/menu/port_attribution.c
 
 # Shared platform building blocks referenced by mk/{desktop,miyoo,portmaster}.mk

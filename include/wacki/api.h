@@ -249,6 +249,8 @@ void           SubtitlesItemHover(const char *wav); /* item name, while hovered 
 void           SubtitlesHint(const char *utf8, uint32_t ms); /* top, any time */
 int            SubtitlesLoaded(void);
 int            SubtitlesSdhActive(void);       /* speaker names + sound captions */
+int            SubtitlesListLangs(char codes[][8], int max); /* napisy/<lang>.txt */
+void           SubtitlesSetLang(const char *code); /* reload + save */
 void           SubtitlesFilmBegin(const char *path);
 void           SubtitlesFilmEnd(void);
 /* The frame to show: `shadow` itself, or a copy with the captions on it. */
@@ -264,6 +266,9 @@ void           ColorFilterApply(int mode, const uint8_t *in768, uint8_t *out768)
 const uint8_t *ColorFilterPalette(const uint8_t *pal);   /* cached */
 void           ColorFilterCycle(void);              /* + saves, shows a hint */
 void           OptionsToggleSubtitles(void);        /* menu/options.c, + hint */
+void           SubsIconsBegin(void);   /* menu/subs_icons.c: Solund ear + flags */
+void           SubsIconsPaint(void);
+int            SubsIconsUpdate(void);  /* hover hint / click; 1 = handled */
 void           OptionsToggleSdh(void);              /* captions for the deaf */
 
 enum { PIXF_SCALE2X = 1, PIXF_SAI2X = 2, PIXF_XBR2X = 3 };

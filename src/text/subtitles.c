@@ -783,3 +783,64 @@ const uint8_t *SubtitlesComposeFrame(const uint8_t *shadow, const uint8_t *pal,
     }
     return s_out;
 }
+
+/* ---- language choice (menu/subs_icons.c: the flags in Solund) ------- */
+
+#include <dirent.h>
+
+/* Codes of every napisy/<code>.txt next to the game data (or in ./ and
+ * ./data), at most `max`, sorted, without duplicates. */
+int SubtitlesListLangs(char codes[][8], int max)
+{
+    const char *roots[3] = { g_data_root[0] ? g_data_root : NULL, ".", "data" };
+    int n = 0;
+    for (int r = 0; r < 3; ++r) {
+        if (!roots[r]) continue;
+        char dir[400];
+        snprintf(dir, sizeof dir, "%s/napisy", roots[r]);
+        DIR *d = opendir(dir);
+        if (!d) continue;
+        struct dirent *e;
+        while ((e = readdir(d)) != NULL && n < max) {
+            const char *nm = e->d_name;
+            size_t len = strlen(nm);
+            if (len < 5 || len > 4 + 7) continue;
+            const char *ext = nm + len - 4;
+            if (!(ext[0] == '.' && (ext[1] | 32) == 't' && (ext[2] | 32) == 'x' && (ext[3] | 32) == 't'))
+                continue;
+            char code[8] = {0};
+            int ok = 1;
+            for (size_t i = 0; i < len - 4; ++i) {
+                char c = nm[i];
+                if (c >= 'A' && c <= 'Z') c = (char)(c + 32);
+                if (!((c >= 'a' && c <= 'z') || c == '_' || c == '-')) { ok = 0; break; }
+                code[i] = c;
+            }
+            if (!ok) continue;
+            int dup = 0;
+            for (int i = 0; i < n; ++i) if (strcmp(codes[i], code) == 0) dup = 1;
+            if (dup) continue;
+            int at = n;                                  /* insertion sort */
+            while (at > 0 && strcmp(codes[at - 1], code) > 0) {
+                memcpy(codes[at], codes[at - 1], 8);
+                --at;
+            }
+            memcpy(codes[at], code, 8);
+            ++n;
+        }
+        closedir(d);
+    }
+    return n;
+}
+
+/* Switch to napisy/<code>.txt now (and remember it in wacki.cfg). */
+void SubtitlesSetLang(const char *code)
+{
+    extern void ConfigSave(void);
+    if (!code || !*code) return;
+    strncpy(g_subtitles_lang, code, sizeof g_subtitles_lang - 1);
+    g_subtitles_lang[sizeof g_subtitles_lang - 1] = 0;
+    SubtitlesUnload();
+    SubtitlesInit();
+    ConfigSave();
+}

@@ -263,10 +263,17 @@ static int SolundClick(int trigger)
         reassert_audio_option_state();
         persist_audio_opts();
         return SOLUND_RC_EXIT;
+    case 0:                        /* MENU_INIT_TRIGGER (menu_loop.c) */
+        toggled = 0;
+        SubsIconsBegin();          /* menu/subs_icons.c: ear + flags */
+        break;
     default:
         toggled = 0;
-        /* idle per-frame call (trigger=-1): hint while hovering */
-        if (g_menu_hover_id == SOLUND_BTN_EXTRA) solund_sdh_hint(150);
+        /* idle per-frame call (trigger=-1): the ear / flags (hover hint,
+         * click), else the hint while hovering the 5th button */
+        if (!SubsIconsUpdate() && g_menu_hover_id == SOLUND_BTN_EXTRA)
+            solund_sdh_hint(150);
+        s_opt_extra = SubtitlesSdhActive() ? 1 : 0;   /* the ear may flip it */
         break;
     }
 
@@ -282,6 +289,7 @@ static SceneDef g_solund_scene = {
     .background_pic = "Solund.pic",
     .mask_file      = "Solund.wyc",
     .on_click       = SolundClick,
+    .after_paint    = SubsIconsPaint,
     .button_count   = SOLUND_BUTTON_COUNT,
     .flags          = SCENE_FLAG_REDRAW,
     .buttons = {
