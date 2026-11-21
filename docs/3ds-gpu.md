@@ -16,11 +16,12 @@ klatkę 640×480 8-bit z paletą, więc nie trzeba przechwytywać wywołań SDL.
    picaGL).
 3. Jeden prostokąt z teksturą na ekran:
    - górny: 4:3 — 320×240 na środku z czarnymi pasami (dokładnie 2:1, więc
-     wygładzanie = czysta średnia 2×2), albo „stretch” = **wypełnienie**:
-     pełne 400 px szerokości bez zniekształcenia (skala 0,625), widać 384
-     z 480 wierszy. Okno stoi na dole (panel widoczny, ucięta góra sceny) i
-     jedzie w górę za kursorem, gdy ten wejdzie w uciętą część; w filmach
-     wyśrodkowane. Przełącza przycisk Y;
+     wygładzanie = czysta średnia 2×2), albo w czasie gry **panorama
+     z wysuwanym panelem** (wspólna z PC/Switchem/Vitą, zob.
+     [panorama.md](panorama.md)): wersja 1 — pełne 400 px szerokości
+     (skala 0,625), widać 384 z 400 wierszy sceny; wersja 2 — cała scena
+     (skala 0,6) z paskami po 8 px. Filmy i menu w 4:3. Przycisk Y:
+     wersja 1 → wersja 2 → 4:3;
    - dolny: wycinek tej samej tekstury (zoom 1×/2×/4× wokół kursora albo
      cała klatka), bez drugiej kopii.
    - stereo 3D (suwak otwarty): druga tekstura z obrazem prawego oka

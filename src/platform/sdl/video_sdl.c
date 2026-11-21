@@ -3,13 +3,9 @@
  *
  * src/platform/sdl/video_sdl.c — video-output HAL, SDL backend.
  *
- * Adds g_aspect_mode support ("stretch" / "4:3"):
- *   "4:3"    — SDL_RenderSetLogicalSize(640,480): SDL letterboxes automatically
- *              when output AR differs (e.g. Switch 1280×720 → black bars).
- *   "stretch"— SDL_RenderSetLogicalSize disabled (0,0); texture blitted with
- *              explicit full-window SDL_Rect → edge-to-edge, no bars.
- *              SDL's RenderSetLogicalSize always preserves AR (per its docs)
- *              so disproportionate fill requires bypassing it entirely.
+ * g_aspect_mode: "wide" / "wide-bars" / "4:3" — the frame is always placed
+ * by hand (see apply_aspect_mode): 4:3 fitted with bars, or, while playing,
+ * the panorama with the sliding inventory panel (src/util/wide_layout.c).
  *
  * g_aspect_mode is defined in src/config.c so it's available for all targets
  * (including PS2 which doesn't link this file). */
@@ -24,6 +20,8 @@
 #ifdef __ANDROID__
 #include "wacki/platform/android_touch.h"
 #endif
+
+#include "wacki/api.h"
 
 #include <SDL.h>
 #include <stdint.h>
@@ -45,51 +43,70 @@ static int           s_fb_w = 0, s_fb_h = 0;
 /* Defined in src/config.c — available for all targets. */
 extern char g_aspect_mode[16];
 
-/* 1 when logical-size scaling is disabled (stretch mode).
- * platform_video_get_present_state() exposes this to platform_sdl.c so
- * handle_mouse_motion can manually rescale coordinates in that mode. */
-static int g_stretch_active = 0;
-
+/* Picture layout. The renderer never uses SDL_RenderSetLogicalSize (except
+ * on Android, whose overlay lays itself out): every present computes the
+ * destination rect itself, and platform_video_window_to_game() maps the
+ * mouse back with the same numbers.
+ *   4:3        — the frame fitted with bars (old "4:3");
+ *   wide/bars  — while playing, the panorama with the sliding inventory
+ *                panel (src/util/wide_layout.c); films/menus stay 4:3. */
 static void apply_aspect_mode(int w, int h)
 {
-    if (!s_ren) return;
-#ifdef __ANDROID__
-    (void)w; (void)h; /* Android overlay manages its own layout */
-    return;
-#else
-    if (g_aspect_mode[0] == '4') {
-        g_stretch_active = 0;
-        SDL_RenderSetLogicalSize(s_ren, w, h);
-    } else {
-        /* stretch: disable logical scaling so SDL stops rescaling mouse
-         * coords; present() blits to explicit full-window rect instead. */
-        g_stretch_active = 1;
-        SDL_RenderSetLogicalSize(s_ren, 0, 0);
-    }
+    (void)w; (void)h;
+#ifndef __ANDROID__
+    if (s_ren) SDL_RenderSetLogicalSize(s_ren, 0, 0);
 #endif
+}
+
+static void output_size(int *ow, int *oh)
+{
+    *ow = s_fb_w; *oh = s_fb_h;
+    if (s_ren && SDL_GetRendererOutputSize(s_ren, ow, oh) == 0 && *ow > 0 && *oh > 0)
+        return;
+    if (s_win) SDL_GetWindowSize(s_win, ow, oh);
+}
+
+static void fit_43(int ow, int oh, SDL_Rect *d)
+{
+    int fw = s_fb_w > 0 ? s_fb_w : 640, fh = s_fb_h > 0 ? s_fb_h : 480;
+    if ((long)ow * fh <= (long)oh * fw) { d->w = ow; d->h = (int)((long)ow * fh / fw); }
+    else                                { d->h = oh; d->w = (int)((long)oh * fw / fh); }
+    d->x = (ow - d->w) / 2;
+    d->y = (oh - d->h) / 2;
 }
 
 void platform_video_get_present_state(int *stretch_active,
                                       int *win_w, int *win_h,
                                       int *fb_w,  int *fb_h)
 {
-    *stretch_active = g_stretch_active;
+    *stretch_active = WideLayoutActive();
     *fb_w = s_fb_w; *fb_h = s_fb_h;
     if (s_win) SDL_GetWindowSize(s_win, win_w, win_h);
     else { *win_w = s_fb_w; *win_h = s_fb_h; }
 }
 
+/* Window (mouse) coordinates → game 640×480 coordinates. */
+void platform_video_window_to_game(int wx, int wy, int *gx, int *gy)
+{
+    int ow, oh, ww = 0, wh = 0;
+    output_size(&ow, &oh);
+    if (s_win) SDL_GetWindowSize(s_win, &ww, &wh);
+    float sx = (ww > 0) ? (float)wx * ow / ww : (float)wx;
+    float sy = (wh > 0) ? (float)wy * oh / wh : (float)wy;
+    if (WideLayoutScreenToGame(ow, oh, sx, sy, gx, gy)) return;
+    SDL_Rect d; fit_43(ow, oh, &d);
+    int x = d.w > 0 ? (int)((sx - d.x) * s_fb_w / d.w) : wx;
+    int y = d.h > 0 ? (int)((sy - d.y) * s_fb_h / d.h) : wy;
+    if (x < 0) x = 0;
+    if (x >= s_fb_w) x = s_fb_w - 1;
+    if (y < 0) y = 0;
+    if (y >= s_fb_h) y = s_fb_h - 1;
+    *gx = x; *gy = y;
+}
+
 void platform_video_toggle_aspect_mode(void)
 {
-    if (g_aspect_mode[0] == '4')
-        strncpy(g_aspect_mode, "stretch", 15);
-    else
-        strncpy(g_aspect_mode, "4:3", 15);
-    g_aspect_mode[15] = '\0';
-    apply_aspect_mode(s_fb_w, s_fb_h);
-    LOG_INFO("platform", "aspect_mode=%s", g_aspect_mode);
-    extern void ConfigSave(void);
-    ConfigSave();
+    WideAspectCycle();              /* wide -> wide-bars -> 4:3, saved */
 }
 
 unsigned plat_video_sdl_init_flags(void)
@@ -233,13 +250,30 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
     SDL_RenderCopy(s_ren, s_tex, NULL, gr.w > 0 ? &gr : NULL);
     wacki_overlay_draw(s_ren);
 #else
-    if (g_stretch_active && s_win) {
-        int ww = w, wh = h;
-        SDL_GetWindowSize(s_win, &ww, &wh);
-        SDL_Rect dest = {0, 0, ww, wh};
-        SDL_RenderCopy(s_ren, s_tex, NULL, &dest);
-    } else {
-        SDL_RenderCopy(s_ren, s_tex, NULL, NULL);
+    {
+        int ow, oh;
+        WideRect r;
+        output_size(&ow, &oh);
+        if (WideLayoutGet(ow, oh, &r)) {
+            /* whole source rows, the fraction moved into the dest rect and
+             * clipped — the pan stays smooth at any scale */
+            int   sy0  = (int)r.src_y;
+            int   sy1  = (int)(r.src_y + r.src_h + 0.999f);
+            if (sy1 > h) sy1 = h;
+            float frac = r.src_y - (float)sy0;
+            SDL_Rect src  = { 0, sy0, w, sy1 - sy0 };
+            SDL_Rect clip = { (int)(r.dst_x + 0.5f), (int)(r.dst_y + 0.5f),
+                              (int)(r.dst_w + 0.5f), (int)(r.dst_h + 0.5f) };
+            SDL_Rect dst  = { clip.x, (int)(r.dst_y - frac * r.scale + 0.5f),
+                              clip.w, (int)((sy1 - sy0) * r.scale + 0.5f) };
+            SDL_RenderSetClipRect(s_ren, &clip);
+            SDL_RenderCopy(s_ren, s_tex, &src, &dst);
+            SDL_RenderSetClipRect(s_ren, NULL);
+        } else {
+            SDL_Rect d;
+            fit_43(ow, oh, &d);
+            SDL_RenderCopy(s_ren, s_tex, NULL, &d);
+        }
     }
 #endif
     SDL_RenderPresent(s_ren);

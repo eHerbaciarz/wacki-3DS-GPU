@@ -308,6 +308,7 @@ void FlushFrameToPrimary(void)
         /* Captions (napisy) go on a copy — see src/text/subtitles.c. */
         /* Colour filter on the palette (util/color_filter.c), then the
          * captions on a copy of the frame (text/subtitles.c). */
+        WideLayoutFrame();           /* panorama + sliding panel state */
         const uint8_t *pal   = ColorFilterPalette(g_palette_rgb);
         const uint8_t *frame = SubtitlesComposeFrame(g_back_shadow, pal,
                                                      g_screen_w, g_screen_h);
@@ -343,6 +344,7 @@ void FadeOutToBlack(void)
 
     for (int s = 1; s <= FADE_OUT_STEPS; ++s) {
         if (PlatformShouldQuit()) break;
+        WideLayoutKeep();            /* fade in the same layout */
         int t = (s * 256) / FADE_OUT_STEPS;                  /* 0..256 */
         for (int i = 0; i < 256; ++i) {
             int r = start[i * 3 + 0], g = start[i * 3 + 1], b = start[i * 3 + 2];

@@ -4,7 +4,7 @@
  * src/config.c — wacki.cfg: persisted player display/input preferences.
  *
  * Dodane klucze:
- *   aspect_mode=stretch|4:3   — tryb proporcji ekranu
+ *   aspect_mode=wide|wide-bars|4:3 — panorama (przycięta / z paskami) albo 4:3
  *   touch_mode=absolute|relative|off — tryb ekranu dotykowego
  *   subtitles_lang=pl            — plik napisy/<lang>.txt (src/text/subtitles.c)
  *   subtitles_speakers=-1|0|1    — imiona mówców (-1 = jak w pliku)
@@ -36,7 +36,7 @@ int         g_smoothing   = -1;     /* PC smoothing: -1 = --scale-mode / default
 int         g_wide_top    = -1;     /* 3DS 800-px top screen: -1 = default (on) */
 
 /* Zdefiniowane tutaj — dostępne dla wszystkich targetów. */
-char g_aspect_mode[16] = "stretch";
+char g_aspect_mode[16] = "wide";   /* wide | wide-bars | 4:3 */
 char g_touch_mode[16]  = "absolute";
 
 int g_config_first_run = 0;
@@ -48,8 +48,11 @@ static void normalize_aspect(const char *raw)
     if (!raw) return;
     if (strncmp(raw,"4:3",3)==0 || strncmp(raw,"4x3",3)==0 || strncmp(raw,"43",2)==0)
         strncpy(g_aspect_mode, "4:3", 15);
-    else if (strncmp(raw,"stretch",7)==0)
-        strncpy(g_aspect_mode, "stretch", 15);
+    else if (strncmp(raw,"wide-bars",9)==0 || strncmp(raw,"bars",4)==0)
+        strncpy(g_aspect_mode, "wide-bars", 15);
+    else if (strncmp(raw,"stretch",7)==0 || strncmp(raw,"wide",4)==0 ||
+             strncmp(raw,"16:9",4)==0)
+        strncpy(g_aspect_mode, "wide", 15);   /* old "stretch" → panorama */
     g_aspect_mode[15] = '\0';
 }
 
@@ -107,8 +110,8 @@ void ConfigSave(void)
     fprintf(fp,"# Wacki display/input preferences\n");
     fprintf(fp,"fullscreen=%d\n", g_fullscreen?1:0);
     fprintf(fp,"scale=%d\n",      g_scale_factor>0?g_scale_factor:1);
-    fprintf(fp,"# aspect_mode: stretch (pelny ekran) | 4:3 (czarne pasy)\n");
-    fprintf(fp,"aspect_mode=%s\n", g_aspect_mode[0]?g_aspect_mode:"stretch");
+    fprintf(fp,"# aspect_mode: wide (panorama, przycieta) | wide-bars (panorama z paskami) | 4:3\n");
+    fprintf(fp,"aspect_mode=%s\n", g_aspect_mode[0]?g_aspect_mode:"wide");
     fprintf(fp,"# touch_mode: absolute | relative | off\n");
     fprintf(fp,"touch_mode=%s\n",  g_touch_mode[0]?g_touch_mode:"absolute");
     fprintf(fp,"# napisy: plik napisy/<subtitles_lang>.txt obok danych gry\n");

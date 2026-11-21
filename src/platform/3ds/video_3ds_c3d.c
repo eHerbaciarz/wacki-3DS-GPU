@@ -19,9 +19,8 @@
  *   3. One textured quad per screen:
  *        top    — 4:3: the frame in a centred 320×240 window with black
  *                 bars (exact 2:1, so smoothing = a clean 2×2 average);
- *                 "stretch" = FILL: full 400 width, proportions kept,
- *                 384 of 480 rows shown, the window following the
- *                 cursor (see s_fill_y);
+ *                 "wide"/"wide-bars" while playing: the panorama with
+ *                 the sliding inventory panel (src/util/wide_layout.c);
  *        bottom — the zoom view: a part of the SAME texture (1×/2×/4×
  *                 around the cursor, or the whole frame), no second copy.
  *      Stereo 3D (slider open): a second texture with the right eye's
@@ -53,6 +52,7 @@
 
 #include "wacki.h"
 #include "wacki/log.h"
+#include "wacki/api.h"
 #include "wacki/platform/video.h"
 #include "perf_log_3ds.h"
 #include "gpu/wacki2d_shbin.h"
@@ -145,16 +145,13 @@ static int s_prev_smooth = -1;
  * would count as background; gaps up to this wide between foreground
  * pixels on a row are filled so sprites don't get speckled holes. */
 #define STEREO_FG_GAP_FILL  3
-/* "stretch" on the 3DS = FILL: the frame keeps its proportions, fills the
- * 400-px width (scale 0.625) and the 384 of 480 rows that fit are shown —
- * a window that follows the cursor up and down. It rests at the bottom
- * (HUD panel visible, the scene's top — usually sky — cut off) and slides
- * up when the cursor goes into the hidden part, so nothing clickable is
- * gone for good. Films: centred. Only the texture coordinates move: no
- * frame conversion for a pan. */
-#define FILL_MARGIN_SRC  64      /* keep the cursor this far from the edge */
-#define FILL_STEP_SRC     8      /* pan speed, frame rows per present      */
-static float s_fill_y = -1.0f;   /* top row of the window; -1 = not yet    */
+/* Aspect modes on the top screen (5:3): "wide" / "wide-bars" = the
+ * panorama with the sliding inventory panel while playing — shared with
+ * PC/Switch/Vita, see src/util/wide_layout.c (crop: 384 of 400 scene rows
+ * at scale 0.625, the window following the cursor; bars: the whole scene
+ * at 0.6 with 8-px side bars). Films and menus stay 4:3. Only the texture
+ * coordinates move: no frame conversion for a pan or the slide. */
+static WideRect s_prev_wr;
 
 static int s_prev_stereo_enabled = -1;
 static int s_have_right = 0;   /* right-eye texture built this frame */
@@ -625,15 +622,8 @@ void platform_video_get_present_state(int *stretch_active,
 
 void platform_video_toggle_aspect_mode(void)
 {
-    extern char g_aspect_mode[16];
-    if (g_aspect_mode[0] == '4')
-        strncpy(g_aspect_mode, "stretch", 15);
-    else
-        strncpy(g_aspect_mode, "4:3", 15);
-    g_aspect_mode[15] = '\0';
+    WideAspectCycle();     /* wide -> wide-bars -> 4:3, saved, hint */
     s_have_prev_frame = 0; /* full redraw next frame */
-    s_fill_y = -1.0f;      /* fill window back to its resting place */
-    LOG_INFO("3ds", "aspect_mode=%s (3DS: stretch = fill, cropped)", g_aspect_mode);
 }
 
 void plat_video_message_box(const char *title, const char *body)
@@ -649,7 +639,7 @@ static void update_state_note(int smooth, int stereo)
     int  zoom = ZOOM_LEVELS[g_zoom_level];
     snprintf(note, sizeof note, "gpu smooth=%d%s aspect=%s zoom=%s%s", smooth,
              s_wide_active ? " wide800" : "",
-             g_aspect_mode[0] == '4' ? "4:3" : "fill",
+             g_aspect_mode,
              zoom == 1 ? "1x" : zoom == 2 ? "2x" : zoom == 4 ? "4x" : "full",
              stereo ? " 3d" : "");
     perf_log_set_state(note);
@@ -779,32 +769,12 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
     }
 
 
-    /* ---- fill mode: where the 384-row window sits ------------------ */
-    extern char g_aspect_mode[16];
-    int   use_43     = (g_aspect_mode[0] == '4');
-    int   fill_h     = (w * TOP_HEIGHT + TOP_WIDTH / 2) / TOP_WIDTH;   /* 384 */
-    float fill_max   = (float)(h - fill_h > 0 ? h - fill_h : 0);
-    int   pan_dirty  = 0;
-    if (!use_43) {
-        float target;
-        if (s_fill_y < 0.0f) s_fill_y = fill_max;
-        if (g_cutscene_playing) {
-            target = fill_max * 0.5f;
-        } else {
-            float my = (float)g_mouse_y;
-            target = s_fill_y;
-            if (my < s_fill_y + FILL_MARGIN_SRC)
-                target = my - FILL_MARGIN_SRC;
-            else if (my > s_fill_y + fill_h - FILL_MARGIN_SRC)
-                target = my - (float)fill_h + FILL_MARGIN_SRC;
-            if (target < 0.0f) target = 0.0f;
-            if (target > fill_max) target = fill_max;
-        }
-        float ny = s_fill_y;
-        if (target > ny) ny = (target - ny > FILL_STEP_SRC) ? ny + FILL_STEP_SRC : target;
-        if (target < ny) ny = (ny - target > FILL_STEP_SRC) ? ny - FILL_STEP_SRC : target;
-        if (ny != s_fill_y) { s_fill_y = ny; pan_dirty = 1; }
-    }
+    /* ---- panorama layout (util/wide_layout.c) ----------------------- */
+    WideRect wr;
+    int  wide_on   = WideLayoutGet(TOP_WIDTH, TOP_HEIGHT, &wr);
+    int  use_43    = !wide_on;
+    int  pan_dirty = memcmp(&wr, &s_prev_wr, sizeof wr) != 0;
+    s_prev_wr = wr;
     int top_redraw = top_dirty || pan_dirty;     /* top_dirty = new content */
 
     if (!top_redraw && !bot_dirty) {
@@ -887,12 +857,15 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
      * 4:3 = 640 columns: the frame 1:1 across) */
     int   top_w = s_wide_active ? WIDE_WIDTH : TOP_WIDTH;
     int   w43   = s_wide_active ? TOP_43_W * 2 : TOP_43_W;
-    float tx0 = use_43 ? (float)((top_w - w43) / 2) : 0.0f;
-    float tx1 = use_43 ? (float)((top_w - w43) / 2 + w43) : (float)top_w;
-    float sy0 = use_43 ? 0.0f : s_fill_y;
-    float sy1 = use_43 ? (float)h : s_fill_y + (float)fill_h;
-    set_quad(QUAD_TOP_L, tx0, 0.0f, tx1, (float)TOP_HEIGHT, 0.0f, sy0, (float)w, sy1);
-    set_quad(QUAD_TOP_R, tx0, 0.0f, tx1, (float)TOP_HEIGHT, 0.0f, sy0, (float)w, sy1);
+    float kx  = (float)top_w / (float)TOP_WIDTH;     /* 1, or 2 when wide */
+    float tx0 = use_43 ? (float)((top_w - w43) / 2) : wr.dst_x * kx;
+    float tx1 = use_43 ? (float)((top_w - w43) / 2 + w43) : (wr.dst_x + wr.dst_w) * kx;
+    float ty0 = use_43 ? 0.0f : wr.dst_y;
+    float ty1 = use_43 ? (float)TOP_HEIGHT : wr.dst_y + wr.dst_h;
+    float sy0 = use_43 ? 0.0f : wr.src_y;
+    float sy1 = use_43 ? (float)h : wr.src_y + wr.src_h;
+    set_quad(QUAD_TOP_L, tx0, ty0, tx1, ty1, 0.0f, sy0, (float)w, sy1);
+    set_quad(QUAD_TOP_R, tx0, ty0, tx1, ty1, 0.0f, sy0, (float)w, sy1);
     set_quad(QUAD_BOT, 0.0f, 0.0f, (float)BOT_WIDTH, (float)BOT_HEIGHT,
              (float)src_x, (float)src_y,
              (float)(src_x + src_region_w), (float)(src_y + src_region_h));

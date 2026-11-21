@@ -26,7 +26,8 @@ własny `src/platform/vita/video_vita.c` (desktop/Switch/handheldy bez zmian).
   sąsiad, do tekstury 1280×960 w GPU), potem płynnie zmniejszona do ekranu
   — gładkie krawędzie bez rozmycia, jakie daje zwykłe liniowe przy 1,13×.
   Całość w GPU.
-- **4:3 / stretch** jak dotąd (przycisk Y / F7): 4:3 = 725×544 na środku.
+- **Panorama / panorama z paskami / 4:3** (przycisk Y): zob.
+  [panorama.md](panorama.md); 4:3 = 725×544 na środku.
   **Dotyk** (tryb absolute) liczony przez ten sam prostokąt — wcześniej w
   4:3 cały panel był mapowany na całą grę mimo czarnych pasów.
 - **SDL2_mixer** nie jest już linkowany (kod go nie używa).
@@ -52,7 +53,7 @@ Oficjalne SDL2 (GXM) jest budowane, jeśli go brak albo ciągnie vitaGL.
 ## Do przetestowania (na Vicie)
 
 - [ ] W logu `renderer: VITA gxm (GPU)`.
-- [ ] Obraz poprawny w 4:3 i stretch, bez śmieci przy ruchu.
+- [ ] Obraz poprawny w 4:3 i obu panoramach, bez śmieci przy ruchu i przy wysuwaniu panelu.
 - [ ] Dotyk w 4:3 trafia w kliknięte miejsce (także przy krawędziach).
 - [ ] Wygładzanie domyślnie włączone; pierwszy przycisk Grafiki przełącza
       od razu; zostaje po restarcie.

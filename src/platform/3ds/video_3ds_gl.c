@@ -417,8 +417,9 @@ void platform_video_toggle_wide(void)
 void platform_video_toggle_aspect_mode(void)
 {
     extern char g_aspect_mode[16];
+    /* CPU backend: no panorama — "wide" here is the old full-width stretch */
     if (g_aspect_mode[0] == '4')
-        strncpy(g_aspect_mode, "stretch", 15);
+        strncpy(g_aspect_mode, "wide", 15);
     else
         strncpy(g_aspect_mode, "4:3", 15);
     g_aspect_mode[15] = '\0';

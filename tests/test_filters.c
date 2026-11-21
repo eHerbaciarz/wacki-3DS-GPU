@@ -95,10 +95,117 @@ TEST(xbr_blends_a_shallow_edge)
     ASSERT_EQ(out[(H*2-1)*W*2], 0x000000u);
 }
 
+/* ---- util/wide_layout.c: panorama with the sliding panel ---------- */
+
+extern char g_aspect_mode[16];
+
+static void wide_frame(const char *mode, int mouse_y, int gameplay)
+{
+    strcpy(g_aspect_mode, mode);
+    g_mouse_y = (int16_t)mouse_y;
+    if (gameplay) WideLayoutMarkGameplay();
+    WideLayoutFrame();
+}
+
+static void wide_reset(void)
+{
+    WideLayoutSetTalking(0);
+    wide_frame("wide", 0, 0);              /* inactive: next entry snaps */
+}
+
+TEST(wide_layout_crop_and_mapping)
+{
+    WideRect r;
+    int gx = -1, gy = -1;
+    wide_reset();
+    WideLayoutSetScreen(1280, 720);
+    wide_frame("wide", 200, 1);
+    ASSERT_TRUE(WideLayoutActive());
+    ASSERT_TRUE(WideLayoutGet(1280, 720, &r));
+    ASSERT_TRUE(r.scale > 1.99f && r.scale < 2.01f);
+    ASSERT_TRUE(r.src_h > 359.9f && r.src_h < 360.1f);     /* 360 of 400 */
+    ASSERT_TRUE(r.src_y > 19.9f && r.src_y < 20.1f);       /* 200·40/400 */
+    ASSERT_TRUE(r.dst_x > -0.1f && r.dst_w > 1279.9f && r.dst_h > 719.9f);
+    /* the cursor's own screen spot maps back onto it */
+    ASSERT_TRUE(WideLayoutScreenToGame(1280, 720, 640.0f, (200 - 20) * 2.0f, &gx, &gy));
+    ASSERT_EQ(gx, 320);
+    ASSERT_TRUE(gy >= 199 && gy <= 200);
+    /* bottom edge = row 400: brings the panel in */
+    WideLayoutScreenToGame(1280, 720, 10.0f, 719.9f, &gx, &gy);
+    ASSERT_TRUE(gy >= 396);
+    int top, bottom;
+    ASSERT_TRUE(WideLayoutBand(&top, &bottom));
+    ASSERT_EQ(top, 20);
+    ASSERT_EQ(bottom, 380);
+}
+
+TEST(wide_layout_bars_panel_and_off)
+{
+    WideRect r;
+    wide_reset();
+    WideLayoutSetScreen(1280, 720);
+    wide_frame("wide-bars", 100, 1);
+    ASSERT_TRUE(WideLayoutGet(1280, 720, &r));
+    ASSERT_TRUE(r.scale > 1.79f && r.scale < 1.81f);       /* 720/400 */
+    ASSERT_TRUE(r.dst_x > 63.9f && r.dst_x < 64.1f);       /* side bars */
+    ASSERT_TRUE(r.src_y < 0.01f && r.src_h > 399.9f);      /* whole scene */
+
+    /* cursor in the panel: it is shown (entry snaps, no slide) */
+    wide_reset();
+    wide_frame("wide", 450, 1);
+    ASSERT_TRUE(WideLayoutGet(1280, 720, &r));
+    ASSERT_TRUE(r.band_l > 479.9f);
+    ASSERT_TRUE(r.src_y + r.src_h > 479.9f - 120.0f * (1.0f - 450.0f / 480.0f));
+
+    /* ... but not while a dialogue line is spoken */
+    wide_reset();
+    WideLayoutSetTalking(1);
+    wide_frame("wide", 450, 1);
+    ASSERT_TRUE(WideLayoutGet(1280, 720, &r));
+    ASSERT_TRUE(r.band_l < 400.1f);
+    WideLayoutSetTalking(0);
+
+    /* menus / films / 4:3 / a 4:3 screen: the old picture */
+    wide_frame("wide", 100, 0);
+    ASSERT_FALSE(WideLayoutActive());
+    wide_frame("4:3", 100, 1);
+    ASSERT_FALSE(WideLayoutActive());
+    WideLayoutSetScreen(640, 480);
+    wide_frame("wide", 100, 1);
+    ASSERT_FALSE(WideLayoutActive());
+    WideLayoutSetScreen(1280, 720);
+
+    /* the button: wide -> wide-bars -> 4:3 -> wide; old "stretch" = wide */
+    strcpy(g_aspect_mode, "stretch");
+    ASSERT_EQ(WideAspectMode(), WIDE_CROP);
+    WideAspectCycle(); ASSERT_STREQ(g_aspect_mode, "wide-bars");
+    WideAspectCycle(); ASSERT_STREQ(g_aspect_mode, "4:3");
+    WideAspectCycle(); ASSERT_STREQ(g_aspect_mode, "wide");
+    wide_reset();
+}
+
+TEST(wide_layout_3ds_top_screen)
+{
+    WideRect r;
+    wide_reset();
+    WideLayoutSetScreen(400, 240);
+    wide_frame("wide", 0, 1);
+    ASSERT_TRUE(WideLayoutGet(400, 240, &r));
+    ASSERT_TRUE(r.src_h > 383.9f && r.src_h < 384.1f);     /* 0.625 */
+    wide_frame("wide-bars", 0, 1);
+    ASSERT_TRUE(WideLayoutGet(400, 240, &r));
+    ASSERT_TRUE(r.dst_x > 7.9f && r.dst_x < 8.1f);
+    WideLayoutSetScreen(1280, 720);
+    wide_reset();
+}
+
 SUITE(filters)
 {
     RUN_TEST(color_filter_modes);
     RUN_TEST(upscalers_keep_flat_areas_and_size);
     RUN_TEST(scale2x_known_pattern);
     RUN_TEST(xbr_blends_a_shallow_edge);
+    RUN_TEST(wide_layout_crop_and_mapping);
+    RUN_TEST(wide_layout_bars_panel_and_off);
+    RUN_TEST(wide_layout_3ds_top_screen);
 }

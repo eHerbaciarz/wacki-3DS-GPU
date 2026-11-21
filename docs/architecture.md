@@ -137,7 +137,7 @@ Klawiatura w pętli głównej:
 - `F12` → menu pauzy
 - `F10` → play statistics, on screen + log (was F3); `F1` colours,
   `F2` subtitles, `F3` smoothing, `F4` captions for the deaf,
-  `F7` aspect 4:3 / stretch (was F10)
+  `F7` aspect: panorama (cropped) → panorama (bars) → 4:3 — see panorama.md
 
 Frame pacing: `EnginePaceFrame(target_ms)` z `src/timer.c` to
 deadline-aware sleep — śpi tylko `target_ms - work_ms`, nigdy nie

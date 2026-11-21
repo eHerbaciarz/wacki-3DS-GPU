@@ -145,7 +145,7 @@ Pełny przewodnik (3 sposoby, w tym uwaga o macOS 15 Sequoia):
 | Napisy wł./wył.       | `F2`                 |
 | Wygładzanie obrazu    | `F3`                 |
 | Napisy dla niesłyszących | `F4`              |
-| Proporcje 4:3 / pełne | `F7`                 |
+| Obraz: panorama / panorama z paskami / 4:3 | `F7` |
 | Statystyki gry        | `F10`                |
 
 `F1`–`F4` pokazują nowy stan u góry ekranu i zapamiętują go w `wacki.cfg`.

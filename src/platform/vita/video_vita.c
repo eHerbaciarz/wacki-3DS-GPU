@@ -35,6 +35,7 @@
 
 #include "wacki.h"
 #include "wacki/log.h"
+#include "wacki/api.h"
 #include "wacki/platform/video.h"
 #include "perf_log_vita.h"
 
@@ -64,35 +65,25 @@ static int           s_sharp_failed = 0;
 
 extern char g_aspect_mode[16];
 
-static int g_stretch_active = 0;
-
+/* The 4:3 rectangle (films, menus, aspect 4:3). In the panorama modes the
+ * gameplay picture is laid out by src/util/wide_layout.c instead. */
 static void compute_game_rect(void)
 {
-    if (g_aspect_mode[0] == '4') {
-        /* 4:3 at full height: 544 * 4/3 = 725.33 → 725, centred. */
-        int w = (SCREEN_H * 4 + 1) / 3;
-        if (w > SCREEN_W) w = SCREEN_W;
-        s_game_rect.x = (SCREEN_W - w) / 2;
-        s_game_rect.y = 0;
-        s_game_rect.w = w;
-        s_game_rect.h = SCREEN_H;
-        g_stretch_active = 0;
-    } else {
-        s_game_rect.x = 0;
-        s_game_rect.y = 0;
-        s_game_rect.w = SCREEN_W;
-        s_game_rect.h = SCREEN_H;
-        g_stretch_active = 1;
-    }
+    /* 4:3 at full height: 544 * 4/3 = 725.33 → 725, centred. */
+    int w = (SCREEN_H * 4 + 1) / 3;
+    if (w > SCREEN_W) w = SCREEN_W;
+    s_game_rect.x = (SCREEN_W - w) / 2;
+    s_game_rect.y = 0;
+    s_game_rect.w = w;
+    s_game_rect.h = SCREEN_H;
 }
 
-/* Front touch panel (normalised 0..1 over the whole screen) → game
- * coordinates through the rectangle the picture is drawn in. Touches on
- * the black bars land on the nearest edge. */
-void vita_video_touch_to_game(float nx, float ny, int *gx, int *gy)
+/* Screen pixel → game coordinates through whatever is on screen now.
+ * Touches on the black bars land on the nearest edge. */
+static void screen_to_game(float px, float py, int *gx, int *gy)
 {
+    if (WideLayoutScreenToGame(SCREEN_W, SCREEN_H, px, py, gx, gy)) return;
     int w = s_fb_w > 0 ? s_fb_w : 640, h = s_fb_h > 0 ? s_fb_h : 480;
-    float px = nx * (float)SCREEN_W, py = ny * (float)SCREEN_H;
     int x = (int)((px - (float)s_game_rect.x) * (float)w / (float)s_game_rect.w);
     int y = (int)((py - (float)s_game_rect.y) * (float)h / (float)s_game_rect.h);
     if (x < 0) x = 0;
@@ -103,27 +94,31 @@ void vita_video_touch_to_game(float nx, float ny, int *gx, int *gy)
     *gy = y;
 }
 
+/* Front touch panel (normalised 0..1 over the whole screen). */
+void vita_video_touch_to_game(float nx, float ny, int *gx, int *gy)
+{
+    screen_to_game(nx * (float)SCREEN_W, ny * (float)SCREEN_H, gx, gy);
+}
+
+/* SDL mouse events (platform_sdl.c): window = screen pixels. */
+void platform_video_window_to_game(int wx, int wy, int *gx, int *gy)
+{
+    screen_to_game((float)wx, (float)wy, gx, gy);
+}
+
 void platform_video_get_present_state(int *stretch_active,
                                       int *win_w, int *win_h,
                                       int *fb_w,  int *fb_h)
 {
-    *stretch_active = g_stretch_active;
+    *stretch_active = WideLayoutActive();
     *fb_w = s_fb_w; *fb_h = s_fb_h;
     *win_w = SCREEN_W; *win_h = SCREEN_H;
 }
 
 void platform_video_toggle_aspect_mode(void)
 {
-    if (g_aspect_mode[0] == '4')
-        strncpy(g_aspect_mode, "stretch", 15);
-    else
-        strncpy(g_aspect_mode, "4:3", 15);
-    g_aspect_mode[15] = '\0';
-    compute_game_rect();
+    WideAspectCycle();                   /* wide -> wide-bars -> 4:3 */
     s_have_prev = 0;                     /* draw the next frame for sure */
-    LOG_INFO("platform", "aspect_mode=%s", g_aspect_mode);
-    extern void ConfigSave(void);
-    ConfigSave();
 }
 
 unsigned plat_video_sdl_init_flags(void)
@@ -136,7 +131,7 @@ static void set_state_note(void)
     char note[96];
     snprintf(note, sizeof note, "gpu smooth=%d%s aspect=%s", s_smooth,
              (s_smooth && s_sharp) ? " sharp-bilinear" : "",
-             g_aspect_mode[0] == '4' ? "4:3" : "stretch");
+             g_aspect_mode);
     perf_log_set_state(note);
 }
 
@@ -261,8 +256,14 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
         changed_mode = 1;
     }
 
+    WideRect wr;
+    int wide = WideLayoutGet(SCREEN_W, SCREEN_H, &wr);
+    static WideRect s_prev_wr;
+    int layout_changed = memcmp(&wr, &s_prev_wr, sizeof wr) != 0;
+    s_prev_wr = wr;
+
     int pal_changed = !s_have_prev || memcmp(s_prev_pal, pal, sizeof s_prev_pal) != 0;
-    if (!pal_changed && !changed_mode && s_have_prev &&
+    if (!pal_changed && !changed_mode && !layout_changed && s_have_prev &&
         memcmp(s_prev, shadow, (size_t)w * h) == 0) {
         perf_log_present(0, 0, 0);
         return;
@@ -286,16 +287,33 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
         if (!s_logged) { LOG_ERROR("vita", "SDL_LockTexture: %s", SDL_GetError()); s_logged = 1; }
     }
 
+    SDL_Texture *src_tex = s_tex[s_cur];
+    int          tex_k   = 1;
     if (s_smooth && s_sharp && SDL_SetRenderTarget(s_ren, s_sharp) == 0) {
         SDL_RenderCopy(s_ren, s_tex[s_cur], NULL, NULL);     /* exact 2×  */
         SDL_SetRenderTarget(s_ren, NULL);
-        SDL_SetRenderDrawColor(s_ren, 0, 0, 0, 255);
-        SDL_RenderClear(s_ren);
-        SDL_RenderCopy(s_ren, s_sharp, NULL, &s_game_rect);  /* linear    */
+        src_tex = s_sharp;                                   /* linear    */
+        tex_k   = 2;
+    }
+    SDL_SetRenderDrawColor(s_ren, 0, 0, 0, 255);
+    SDL_RenderClear(s_ren);
+    if (wide) {
+        /* panorama (util/wide_layout.c): whole rows of the frame, the
+         * fraction of the pan moved into the dest rect and clipped */
+        int   sy0  = (int)wr.src_y;
+        int   sy1  = (int)(wr.src_y + wr.src_h + 0.999f);
+        if (sy1 > h) sy1 = h;
+        float frac = wr.src_y - (float)sy0;
+        SDL_Rect src  = { 0, sy0 * tex_k, w * tex_k, (sy1 - sy0) * tex_k };
+        SDL_Rect clip = { (int)(wr.dst_x + 0.5f), (int)(wr.dst_y + 0.5f),
+                          (int)(wr.dst_w + 0.5f), (int)(wr.dst_h + 0.5f) };
+        SDL_Rect dst  = { clip.x, (int)(wr.dst_y - frac * wr.scale + 0.5f),
+                          clip.w, (int)((sy1 - sy0) * wr.scale + 0.5f) };
+        SDL_RenderSetClipRect(s_ren, &clip);
+        SDL_RenderCopy(s_ren, src_tex, &src, &dst);
+        SDL_RenderSetClipRect(s_ren, NULL);
     } else {
-        SDL_SetRenderDrawColor(s_ren, 0, 0, 0, 255);
-        SDL_RenderClear(s_ren);
-        SDL_RenderCopy(s_ren, s_tex[s_cur], NULL, &s_game_rect);
+        SDL_RenderCopy(s_ren, src_tex, NULL, &s_game_rect);
     }
     uint64_t t1 = perf_now();
     SDL_RenderPresent(s_ren);
@@ -303,9 +321,9 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
     perf_log_present(1, t1 - t0, t2 - t1);
 
     static int s_note_smooth = -1, s_note_stretch = -1;
-    if (s_note_smooth != s_smooth || s_note_stretch != g_stretch_active) {
+    if (s_note_smooth != s_smooth || s_note_stretch != WideAspectMode()) {
         s_note_smooth = s_smooth;
-        s_note_stretch = g_stretch_active;
+        s_note_stretch = WideAspectMode();
         set_state_note();
     }
 }

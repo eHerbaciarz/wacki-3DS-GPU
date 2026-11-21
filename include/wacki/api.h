@@ -270,6 +270,28 @@ enum { PIXF_SCALE2X = 1, PIXF_SAI2X = 2, PIXF_XBR2X = 3 };
 /* 0x00RRGGBB src w×h → out (2w)×(2h). */
 void           PixelUpscale2x(int kind, const uint32_t *src, int w, int h, uint32_t *out);
 
+/* ---- util/wide_layout.c: panorama with a sliding inventory panel ---- */
+enum { WIDE_OFF = 0, WIDE_CROP = 1, WIDE_BARS = 2 };
+typedef struct {
+    int   active;
+    float scale;                      /* screen px per frame px          */
+    float band_l;                     /* rows 0..band_l reachable now    */
+    float src_x, src_y, src_w, src_h; /* part of the 640x480 frame shown */
+    float dst_x, dst_y, dst_w, dst_h; /* where, in screen pixels         */
+} WideRect;
+int  WideAspectMode(void);            /* WIDE_OFF / WIDE_CROP / WIDE_BARS */
+void WideAspectCycle(void);           /* wide -> wide-bars -> 4:3, + hint */
+void WideLayoutMarkGameplay(void);    /* hud_paint.c: panel painted      */
+void WideLayoutKeep(void);            /* fades: keep the current layout  */
+void WideLayoutSetTalking(int on);    /* dialog.c: keep the panel hidden */
+void WideLayoutSetScreen(int w, int h);
+void WideLayoutFrame(void);           /* graphics.c, once per present    */
+int  WideLayoutActive(void);
+int  WideLayoutGet(int scr_w, int scr_h, WideRect *r);
+int  WideLayoutScreenToGame(int scr_w, int scr_h, float sx, float sy,
+                            int *gx, int *gy);
+int  WideLayoutBand(int *top, int *bottom); /* visible scene rows        */
+
 /* ---- archive.c / depack.c ---------------------------------------- */
 
 int  OpenDtaArchiveFile(const char *path);

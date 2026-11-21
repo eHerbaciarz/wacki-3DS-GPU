@@ -757,6 +757,13 @@ const uint8_t *SubtitlesComposeFrame(const uint8_t *shadow, const uint8_t *pal,
     uint8_t dark, bright;
     pick_colours(pal, &dark, &bright);
     int bottom = (!g_cutscene_playing && h > SUB_HUD_TOP) ? SUB_HUD_TOP : h;
+    int top    = 0;
+    /* Panorama (util/wide_layout.c): only rows top..bottom of the scene
+     * are on screen — keep the captions inside that band. */
+    {
+        int bt, bb;
+        if (WideLayoutBand(&bt, &bb) && bb - bt > 100) { top = bt; bottom = bb; }
+    }
 
     /* bottom: film text wins over dialogue during a film */
     Caption *low = !captions ? NULL
@@ -772,7 +779,7 @@ const uint8_t *SubtitlesComposeFrame(const uint8_t *shadow, const uint8_t *pal,
                   : (captions && s_cap[CAP_SND].text) ? &s_cap[CAP_SND] : NULL;
     if (high) {
         build_image(high, w);
-        blit_caption(s_out, w, h, high, SUB_GAP, dark, bright);
+        blit_caption(s_out, w, h, high, top + SUB_GAP, dark, bright);
     }
     return s_out;
 }

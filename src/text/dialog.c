@@ -274,6 +274,7 @@ static void dialog_play_line(uint16_t actor, const char *text,
     if (!has_text && !has_audio) return;
 
     if (has_text) ScriptCallShowText(actor, text);
+    WideLayoutSetTalking(1);     /* panorama: panel stays hidden */
 
     /* napisy (src/text/subtitles.c): the line's text from the subtitle
      * file, shown at the bottom while the line plays. sub_ms = reading
@@ -333,6 +334,7 @@ static void dialog_play_line(uint16_t actor, const char *text,
         EnginePaceFrame(DIALOG_FRAME_DELAY_MS);
     }
     SubtitlesDialogEnd();
+    WideLayoutSetTalking(0);
     /* Flip atlas back to the speaker's original pose so they don't
      * stay frozen in talking-head form between lines. */
     DialogRestoreTopSpeaker();

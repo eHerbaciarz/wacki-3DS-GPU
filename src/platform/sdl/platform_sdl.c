@@ -149,7 +149,7 @@ static void handle_keydown(const SDL_Event *ev)
     if (sym == SDLK_F12 || sym == SDLK_AC_BACK) g_pause_menu_request = 1;
     if (sym == SDLK_F11) plat_video_toggle_fullscreen();
 #ifndef WACKI_PS2
-    /* F7: aspect 4:3 / stretch (was F10). */
+    /* F7: aspect panorama (cropped) -> panorama (bars) -> 4:3. */
     if (sym == SDLK_F7)  platform_video_toggle_aspect_mode();
     if (sym == SDLK_F3)  plat_video_toggle_smoothing();
     if (sym == SDLK_F8)  platform_touch_cycle_mode();
@@ -176,6 +176,10 @@ static void handle_textinput(const SDL_Event *ev)
     }
 }
 
+#ifndef __ANDROID__
+static int s_ptr_valid = 0, s_ptr_wx, s_ptr_wy, s_ptr_gx, s_ptr_gy;
+#endif
+
 static void handle_mouse_motion(const SDL_Event *ev)
 {
 #ifdef __ANDROID__
@@ -183,23 +187,35 @@ static void handle_mouse_motion(const SDL_Event *ev)
         return;
     g_mouse_x = (int16_t)ev->motion.x;
     g_mouse_y = (int16_t)ev->motion.y;
-#elif defined(WACKI_SWITCH) || defined(WACKI_VITA)
-    {
-        int stretch = 0, win_w = s_w, win_h = s_h, fb_w = s_w, fb_h = s_h;
-        platform_video_get_present_state(&stretch, &win_w, &win_h, &fb_w, &fb_h);
-        if (stretch && win_w > 0 && win_h > 0) {
-            g_mouse_x = (int16_t)(ev->motion.x * fb_w / win_w);
-            g_mouse_y = (int16_t)(ev->motion.y * fb_h / win_h);
-        } else {
-            g_mouse_x = (int16_t)ev->motion.x;
-            g_mouse_y = (int16_t)ev->motion.y;
-        }
-    }
 #else
-    g_mouse_x = (int16_t)ev->motion.x;
-    g_mouse_y = (int16_t)ev->motion.y;
+    {
+        int gx = ev->motion.x, gy = ev->motion.y;
+        platform_video_window_to_game(ev->motion.x, ev->motion.y, &gx, &gy);
+        g_mouse_x = (int16_t)gx;
+        g_mouse_y = (int16_t)gy;
+        s_ptr_wx = ev->motion.x; s_ptr_wy = ev->motion.y;
+        s_ptr_gx = gx;           s_ptr_gy = gy;
+        s_ptr_valid = 1;
+    }
 #endif
 }
+
+#ifndef __ANDROID__
+/* The panorama's layout (util/wide_layout.c) moves while the inventory
+ * panel slides in or out; a mouse that stands still must then point at
+ * the new game position, so the last mouse position is mapped again each
+ * frame. Only while nothing else (pad cursor, touch, game warp) has moved
+ * the cursor since. */
+static void remap_still_mouse(void)
+{
+    if (!s_ptr_valid) return;
+    if (g_mouse_x != s_ptr_gx || g_mouse_y != s_ptr_gy) { s_ptr_valid = 0; return; }
+    int gx = s_ptr_gx, gy = s_ptr_gy;
+    platform_video_window_to_game(s_ptr_wx, s_ptr_wy, &gx, &gy);
+    g_mouse_x = (int16_t)gx; g_mouse_y = (int16_t)gy;
+    s_ptr_gx = gx;           s_ptr_gy = gy;
+}
+#endif
 
 static void handle_mouse_button_down(const SDL_Event *ev)
 {
@@ -431,6 +447,9 @@ void PlatformPumpEvents(void)
     }
 
     if (!g_headless) poll_virtual_cursor();
+#ifndef __ANDROID__
+    remap_still_mouse();
+#endif
 #ifdef __ANDROID__
     if (!g_headless) wacki_overlay_tick();
 #endif
