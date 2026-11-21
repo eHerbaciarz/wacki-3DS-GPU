@@ -1,8 +1,12 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
  * Copyright (C) 2026 Mateusz Szuła
  *
- * src/menu/subs_icons.c — subtitle switches drawn on the Solund (sound)
- * options screen, next to the game's own buttons:
+ * src/menu/subs_icons.c — the port's own icons in the options menus.
+ *
+ * Main Options screen: a light bulb = hints (text/hints.c) on/off, off by
+ * default; lit with rays when on, grey and crossed out when off.
+ *
+ * Solund (sound) screen, next to the game's own buttons:
  *
  *   [ear + cupped hand]  napisy dla niesłyszących on/off (speaker names
  *                        + sound captions) — the same switch as the 5th
@@ -25,6 +29,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 extern AnimAsset *g_menu_asset_10;     /* menu_loop.c: the scene's atlas */
@@ -238,7 +243,9 @@ static int row_width(void)
     return EAR_N + (s_nlangs ? GAP + s_nlangs * (FLAG_W + GAP) - GAP : 0);
 }
 
-static void place_row(void)
+/* Under the game's buttons (bbox of the menu atlas frames), or above
+ * them when there is no room; centred on them. */
+static void place_box(int rw, int rh, int *ox, int *oy)
 {
     int x0 = 1 << 20, y0 = 1 << 20, x1 = -1, y1 = -1;
     AnimAsset *a = g_menu_asset_10;
@@ -253,16 +260,20 @@ static void place_row(void)
             if (y + h > y1) y1 = y + h;
         }
     }
-    int rw = row_width();
     if (x1 < 0) { x0 = 0; x1 = WACKI_SCREEN_W; y0 = 40; y1 = 300; }
     int x = (x0 + x1 - rw) / 2;
     int y = y1 + 14;
-    if (y + ROW_H > WACKI_SCREEN_H - 8) y = y0 - 14 - ROW_H;    /* above */
-    if (y < 8) y = WACKI_SCREEN_H - 8 - ROW_H;
+    if (y + rh > WACKI_SCREEN_H - 8) y = y0 - 14 - rh;    /* above */
+    if (y < 8) y = WACKI_SCREEN_H - 8 - rh;
     if (x < 8) x = 8;
     if (x + rw > WACKI_SCREEN_W - 8) x = WACKI_SCREEN_W - 8 - rw;
-    s_row_x = x;
-    s_row_y = y;
+    *ox = x;
+    *oy = y;
+}
+
+static void place_row(void)
+{
+    place_box(row_width(), ROW_H, &s_row_x, &s_row_y);
 }
 
 static int item_at(int mx, int my)
@@ -350,5 +361,101 @@ int SubsIconsUpdate(void)
     } else {
         flag_hint(s_hover, 150);
     }
+    return 1;
+}
+
+/* ---- the light bulb on the main Options screen: hints on/off --------- */
+
+/* 'g' glass, 'f' filament, 'b' screw base, 'o' outline */
+static const char *const s_bulb[EAR_N] = {
+    "................................",
+    "................................",
+    "...........oooooooooo...........",
+    "..........ooggggggggooo.........",
+    "........ooogggggggggggoo........",
+    "........oggggggggggggggoo.......",
+    ".......oogggggggggggggggo.......",
+    "......ooggggggggggggggggoo......",
+    "......oggggggggggggggggggo......",
+    "......oggggggggggggggggggo......",
+    "......oggggggggggggggggggo......",
+    "......oggggggggggggggggggo......",
+    "......oggggggggggggggggggo......",
+    "......oggggggggfffgggggggo......",
+    "......ogggggggffffgggggggo......",
+    "......ofggggggfggfgggggggo......",
+    "......ooggggggfggfggggggoo......",
+    ".......ofgggggfggfgggggfo.......",
+    ".......oofgggggggggggggoo.......",
+    "........oofggggggggggfoo........",
+    ".........ooggggggggggoo.........",
+    "..........oggggggggggo..........",
+    "..........ooggggggggoo..........",
+    "...........oggggggggo...........",
+    "...........oggggggggo...........",
+    "...........ogbbbbbbgo...........",
+    "...........oggggggggo...........",
+    "...........obbbbbbbbo...........",
+    "...........oogggggggo...........",
+    "...........obbbbbbbbo...........",
+    "...........ooggggggoo...........",
+    "............oooooooo............",
+};
+
+extern int g_hints_on;
+static int s_bulb_x = -1, s_bulb_y = -1, s_bulb_hover;
+
+void HintIconBegin(void)
+{
+    s_bulb_x = s_bulb_y = -1;
+    s_bulb_hover = 0;
+}
+
+void HintIconPaint(void)
+{
+    if (!g_back_shadow) return;
+    if (s_bulb_x < 0) place_box(EAR_N, EAR_N, &s_bulb_x, &s_bulb_y);
+    int on = g_hints_on, x = s_bulb_x, y = s_bulb_y;
+    uint8_t dark  = pal_near(0, 0, 0);
+    uint8_t glass = on ? pal_near(255, 225, 80) : pal_near(150, 150, 150);
+    if (s_bulb_hover) glass = on ? pal_near(255, 245, 150) : pal_near(200, 200, 200);
+    uint8_t fil   = on ? pal_near(200, 80, 20) : pal_near(80, 80, 80);
+    uint8_t base  = pal_near(120, 120, 130);
+    for (int j = 0; j < EAR_N; ++j)
+        for (int i = 0; i < EAR_N; ++i) {
+            char c = s_bulb[j][i];
+            uint8_t v = c == 'g' ? glass : c == 'f' ? fil : c == 'b' ? base : c == 'o' ? dark : 0;
+            if (c != '.') put(x + i, y + j, v);
+        }
+    if (on) {                          /* rays */
+        uint8_t ray = pal_near(255, 240, 140);
+        static const signed char r[][4] = { {3,6,5,7}, {29,6,27,7}, {2,13,4,13}, {30,13,28,13}, {16,0,16,1} };
+        for (size_t k = 0; k < sizeof r / sizeof r[0]; ++k) {
+            int ax = r[k][0], ay = r[k][1], bx = r[k][2], by = r[k][3];
+            int n = abs(bx - ax) > abs(by - ay) ? abs(bx - ax) : abs(by - ay);
+            for (int t = 0; t <= n; ++t)
+                put(x + ax + (n ? (bx - ax) * t / n : 0), y + ay + (n ? (by - ay) * t / n : 0), ray);
+        }
+    } else {                           /* red slash, dark edged */
+        uint8_t red = pal_near(230, 25, 25);
+        for (int t = 2; t < EAR_N - 2; ++t)
+            for (int k = -2; k <= 2; ++k)
+                put(x + t + k, y + EAR_N - 1 - t, (k == -2 || k == 2) ? dark : red);
+    }
+}
+
+int HintIconUpdate(void)
+{
+    if (s_bulb_x < 0) place_box(EAR_N, EAR_N, &s_bulb_x, &s_bulb_y);
+    s_bulb_hover = g_mouse_x >= s_bulb_x && g_mouse_x < s_bulb_x + EAR_N &&
+                   g_mouse_y >= s_bulb_y && g_mouse_y < s_bulb_y + EAR_N;
+    if (!s_bulb_hover) return 0;
+    if (g_lmb_clicked) {
+        g_lmb_clicked = 0;
+        HintsToggle();                      /* + saved + hint */
+        return 1;
+    }
+    SubtitlesHint(g_hints_on ? "Podpowiedzi: w\xC5\x82\xC4\x85""czone"
+                             : "Podpowiedzi: wy\xC5\x82\xC4\x85""czone (domy\xC5\x9Blnie)", 150);
     return 1;
 }

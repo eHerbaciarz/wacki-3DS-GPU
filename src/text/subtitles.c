@@ -56,7 +56,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define SUB_MAX_LINES         3     /* lines per caption on screen        */
+#define SUB_MAX_LINES         5     /* lines per caption (hints are long)  */
 #define SUB_TEXT_MAX        512     /* bytes of one caption (font bytes)  */
 #define SUB_MARGIN_X         16     /* keep text this far from the sides  */
 #define SUB_GAP              4      /* px between the text and an edge    */

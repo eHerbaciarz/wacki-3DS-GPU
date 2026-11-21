@@ -707,6 +707,43 @@ def cmd_sprawdz(a):
     sys.exit(1 if problemy else 0)
 
 
+def cmd_komnaty(a):
+    """Wypisz etapy i komnaty z Wacky.scr — do słów „@” w podpowiedzi/*.txt."""
+    katalogi = [a.rozpakowane] if a.rozpakowane else []
+    if a.dane:
+        katalogi += [os.path.join(a.praca, "dta"), a.dane]
+    sciezka = None
+    for k in katalogi:
+        if not k or not os.path.isdir(k):
+            continue
+        for root, _d, files in os.walk(k):
+            for f in files:
+                if f.lower() == "wacky.scr":
+                    sciezka = os.path.join(root, f)
+                    break
+            if sciezka:
+                break
+        if sciezka:
+            break
+    if not sciezka:
+        sys.exit("Nie znalazłem Wacky.scr. Najpierw: rozpakuj --dane KATALOG_GRY")
+    tekst = open(sciezka, "rb").read().decode("latin-1")
+    etap, komnata, wynik = None, None, []
+    for m in re.finditer(r"\[(etap|komnata)\]\s*([^\s\[\]]+)|([A-Za-z0-9_\-]+\.pic)", tekst, re.I):
+        if m.group(1) and m.group(1).lower() == "etap":
+            etap, komnata = m.group(2), None
+        elif m.group(1):
+            komnata = m.group(2)
+            wynik.append([etap, komnata, []])
+        elif m.group(3) and wynik and wynik[-1][1] == komnata and komnata:
+            pic = m.group(3)
+            if pic.lower() not in [x.lower() for x in wynik[-1][2]]:
+                wynik[-1][2].append(pic)
+    for etap, komnata, pics in wynik:
+        print("etap %s\t%s\t%s" % (etap, komnata, ", ".join(pics[:4])))
+    log("%d komnat z %s" % (len(wynik), sciezka))
+
+
 def cmd_tlumacz(a):
     zrodlo = a.plik
     jez_z = a.z or "pl"
@@ -823,6 +860,12 @@ def main(argv=None):
     sp.add_argument("--wyjscie")
     sp.add_argument("--argos", action="store_true", help="przetłumacz maszynowo (offline)")
     sp.set_defaults(fn=cmd_tlumacz)
+
+    sp = sub.add_parser("komnaty", help="lista etapów i komnat (do podpowiedzi)")
+    sp.add_argument("--dane", help="katalog z DANE_*.DTA (po „rozpakuj”)")
+    sp.add_argument("--praca", default="napisy_praca")
+    sp.add_argument("--rozpakowane", help="katalog z już rozpakowanymi plikami gry")
+    sp.set_defaults(fn=cmd_komnaty)
 
     a = p.parse_args(argv)
     a.fn(a)

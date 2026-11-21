@@ -266,6 +266,19 @@ void           ColorFilterApply(int mode, const uint8_t *in768, uint8_t *out768)
 const uint8_t *ColorFilterPalette(const uint8_t *pal);   /* cached */
 void           ColorFilterCycle(void);              /* + saves, shows a hint */
 void           OptionsToggleSubtitles(void);        /* menu/options.c, + hint */
+/* ---- text/hints.c: optional hints (podpowiedzi) ---- */
+void           HintsInit(void);
+void           HintsUnload(void);
+int            HintsLoadBuffer(const char *utf8, size_t len);
+int            HintsCount(void);
+int            HintsFindTopic(int etap, const char *room, const char *pic);
+void           HintsPress(int topic, uint32_t now, char *out, size_t cap);
+void           HintsReset(void);
+void           HintsRequest(void);     /* H / pad combo */
+void           HintsToggle(void);      /* light bulb in Options */
+void           HintIconBegin(void);    /* menu/subs_icons.c: the bulb */
+void           HintIconPaint(void);
+int            HintIconUpdate(void);
 void           SubsIconsBegin(void);   /* menu/subs_icons.c: Solund ear + flags */
 void           SubsIconsPaint(void);
 int            SubsIconsUpdate(void);  /* hover hint / click; 1 = handled */

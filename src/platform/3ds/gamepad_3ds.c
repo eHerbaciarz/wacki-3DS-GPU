@@ -113,7 +113,8 @@ void platform_pad_handle_buttons(void)
 
     /* Physical A = left click. No swap — see this file's top comment
      * for why the Switch port's A/B compensation doesn't apply here. */
-    if (down & KEY_A) g_lmb_clicked = 1;
+    /* (SELECT + A = hint instead, see below.) */
+    if ((down & KEY_A) && !(held & KEY_SELECT)) g_lmb_clicked = 1;
     /* Physical B = right click. */
     if (down & KEY_B) g_rmb_clicked = 1;
     /* SELECT is a modifier: SELECT+Y = colour filter, SELECT+X = zoom
@@ -139,6 +140,10 @@ void platform_pad_handle_buttons(void)
         platform_video_cycle_zoom();
     }
 
+    if (select_held && (down & KEY_A)) {
+        HintsRequest();                    /* SELECT+A: hint (text/hints.c) */
+        s_select_combo = 1;
+    }
     if (select_held && (down & KEY_START)) {
         platform_video_toggle_wide();      /* SELECT+START: 800-px top screen */
         s_select_combo = 1;

@@ -1,0 +1,182 @@
+# Podpowiedzi do „Wacki: Kosmiczna rozgrywka” — SZKIC DO SPRAWDZENIA W GRZE.
+# Ułożone własnymi słowami na podstawie poradników z sieci. Mogą się
+# zdarzyć pomyłki (zwłaszcza kto co robi i w której lokacji).
+#
+# Format (UTF-8):
+#   [etap N]              etap gry, jak w silniku (1..5)
+#   = Tytuł               temat, widać go w podpowiedzi
+#   @ słowo, słowo        temat dla miejsca, którego nazwa (komnata) albo
+#                         tło (.pic) zawiera któreś słowo; wielkość liter
+#                         bez znaczenia
+#   @ *                   ogólny temat etapu — gdy miejsce nie pasuje
+#   1<TAB>tekst           stopnie: 1 = naprowadzenie ... ostatni = rozwiązanie
+#   „|” w tekście = nowa linia.
+#
+# Franc = chudy i wysoki, Edek = gruby i niski.
+# Słowa po „@” to na razie zgadywane nazwy miejsc — do poprawienia, gdy
+# znamy prawdziwe (gra wypisuje je w logu przy każdej podpowiedzi).
+
+[etap 1]
+= Osiedle
+@ *
+1	Aargh szuka części ACME. Rozejrzyj się po osiedlu: przyda się czerwona obudowa i sprawny samochód.
+2	Samochodowi brakuje koła, a akumulator jest pusty. Zbieraj wszystko, co da się zabrać — i używaj obu bohaterów.
+3	Koło złożysz z opony i dętki. Prąd dostaniesz ze słupa wysokiego napięcia, jeśli masz drut.
+4	Edek zakłada koło, Franc zaczepia drut o słup, Edek wsiada do auta, a Franc ładuje drutem akumulator.
+
+= Ulica i bloki
+@ ulic, blok, osiedl, balkon
+1	Na balkonie i w budynkach coś jest do wzięcia.
+2	Kwiatek z balkonu sięgnie wyższy z bohaterów. W bloku po prawej leży gumowa rurka.
+3	Franc zrywa kwiatek z balkonu, Edek przynosi gumową rurkę z budynku po prawej.
+
+= Kiosk
+@ kiosk
+1	Kioskarka byłaby milsza, gdyby dostała prezent. A pijak przy kiosku chętnie by się czegoś napił.
+2	Gdy kioskarka zachwyca się prezentem, drugi bohater może coś wziąć z lady. Banan też się przyda — a dokładniej jego skórka.
+3	Edek daje kwiatek kioskarce, a Franc w tym czasie bierze lalkę. Edek zjada banana, Franc podnosi skórkę.
+4	Franc przelewa piwo między kuflami, zabiera je i daje pełny kufel pijakowi. Śpiącemu pijakowi Edek zabiera agrafkę i sznurek — połącz je.
+5	Franc wtyka pijakowi rurkę. Później: klamerka na nos pijaka i dętka na rurkę — tak napompujesz dętkę.
+
+= Plac zabaw
+@ plac, piask, hust, zabaw
+1	W krzakach coś błyszczy, a czerwone „wiaderko” w piaskownicy to część ACME.
+2	Do wiaderka nie podejdziesz, gdy dziewczynka patrzy — jeden bohater ją zajmuje, drugi przyciąga wiaderko z daleka.
+3	Franc wyciąga drut z krzaków, Edek zrywa gałąź. Gdy Franc bawi dziewczynkę, Edek przyciąga wiaderko agrafką na sznurku. Płaczącej dziewczynce daj lalkę.
+4	Skórka od banana pomoże zdobyć deskorolkę. Skok Edka na deskorolce zaczyna zamieszanie, po którym Franc wspina się po skarpie po dętkę i klamerkę.
+5	Opona jest przy huśtawce — trzeba odciągnąć uwagę huśtającego się. Oponę i napompowaną dętkę połącz w koło.
+
+[etap 2]
+= Ameryka
+@ *
+1	Trzeba dostać się do laboratorium. Potrzebne będą przepustki — a potem paliwo i sposób na ucieczkę.
+2	Zacznij od kosza i ławki: z dwóch „śmieci” zrobisz coś, co ucieszy wartownika.
+3	Na przepustkach muszą być wasze zdjęcia — jest tu fotobudka. Paliwo jest na stacji obok warsztatu.
+4	W laboratorium kubek idzie do maszyny, trzeba wpisać kod i tak ustawić dźwignie, żeby świecąca część trafiła do pojemnika.
+
+= Ławka i wartownik
+@ wartow, brama, lawk, ławk, plot, płot
+1	W koszu i na ławce leży coś, co po połączeniu da się komuś dać.
+2	Papierek po gumie + przeżuta guma z ławki = „nowa” guma. Wartownik ją doceni.
+3	Edek bierze z kosza papierek i zapalniczkę, Franc odkleja gumę z ławki. Połącz, daj gumę wartownikowi, a potem wyciągnij korbę z płotu.
+
+= Fotobudka i przepustki
+@ foto, budk
+1	Fotobudka nie przyjmie byle czego... ale może przyjmie coś okrągłego.
+2	Zamiast monety wrzuć guzik. Zdjęcia przydadzą się do przepustek.
+3	Guzikiem uruchom fotobudkę, wytnij zdjęcia z obu przepustek i wklej swoje. Przed wejściem przepustki trzeba rozmagnesować na iskrach urządzenia w warsztacie.
+
+= Warsztat i stacja
+@ warszt, stacj, benz, garaz, garaż
+1	Maszyna w warsztacie potrzebuje paliwa i czegoś do kręcenia.
+2	Wiadro napełnisz na stacji obok warsztatu. Lejek trafia do maszyny, korba też.
+3	Franc wkłada lejek w urządzenie, Edek wlewa benzynę i wkłada korbę. Trzy obroty korbą dają minę i plecak.
+4	Napełnij plecak gazem i zapalniczkę benzyną. Minę oddaj naukowcowi.
+
+= Schody i lejek
+@ schod, schody
+1	Kamień ze schodów może się do czegoś przydać.
+2	Odłup kamień nożyczkami (najpierw weź wiadro) i wrzuć go do lejka za laboratorium.
+3	Kamień wrzucony do lejka za laboratorium daje łup i przepustkę.
+
+= Laboratorium
+@ labor, korytarz, recep
+1	Recepcjonistkę trzeba czymś zająć, a w środku przyda się kubek.
+2	Jeden bohater zagaduje recepcjonistkę, drugi zabiera kubek. Przepustką otworzysz drzwi.
+3	Edek wkłada kubek do maszyny, Franc wpisuje kod. Dźwigniami doprowadź świecącą część do pojemnika i wyjmij ją z maszyny.
+4	Ucieczka: Edek zakłada plecak z gazem, Franc się do niego przypina i zapala zapalniczkę.
+
+[etap 3]
+= Afryka
+@ *
+1	Celem jest kopalnia diamentów i sposób, żeby się stąd wydostać.
+2	Najpierw dostań się do warsztatu — jest tam masa przydatnych rzeczy.
+3	Kopalnię otworzysz dynamitem. Diamenty trzeba potem przerobić w prasie i w maszynie do szlifowania.
+4	Na koniec: marchewka na kiju i osioł przy panelu słonecznym.
+
+= Przed kopalnią
+@ kopal, wejsc, wejśc
+1	Kłódka i drzwi nie wyglądają na mocne.
+2	Kłódkę otworzysz scyzorykiem, drzwi trzeba kopnąć. Roślina przed kopalnią też się przyda.
+3	Franc otwiera kłódkę, Edek kopie w drzwi. Zerwij roślinę, odetnij kawałek drutu i gałąź.
+
+= Warsztat
+@ warszt
+1	Zabierz z warsztatu wszystko, co się da — wyżej sięga Franc.
+2	Przydadzą się: plaster, słoiki, torebki z nasionami, głowa Lenina i rękawice.
+3	Edek kopie metalową ścianę drugi raz i wyciąga dynamit. Sznurek pocięty na kawałki posłuży jako lonty, a zapalniczkę napełnisz z beczki.
+
+= Strażnik i tubylec
+@ straz, strażn, tubyl, wiosk
+1	Strażnik ma coś, czego potrzebujesz — trzeba go unieruchomić.
+2	Plaster na ręce strażnika. Tubylca zajmiesz rośliną, którą trzeba podpalić.
+3	Posadź roślinę przed tubylcem i podpal ją okularami (ze zdjęcia Franca). Zaklej strażnikowi ręce plastrem i weź sznurek i zapalniczkę.
+
+= Kopalnia
+@ sztoln, szczelin, wnetrz, wnętrz
+1	Dynamit trzeba podłożyć w kilku miejscach — i nie stać obok, gdy wybucha.
+2	Cztery laski dynamitu w szczeliny. Podpalaj po jednym, wychodź i czekaj na wybuch (jeden pali się dłużej).
+3	Po wybuchach zbierz kapiącą wodę do dwóch słoików i dziewięć diamentów.
+
+= Prasa i szlifierka
+@ pras, szlif, maszyn, panel
+1	Panel słoneczny nie działa — czegoś mu brakuje.
+2	Napraw kabel panelu. Część diamentów zgnieć w prasie, a pył przyda się w drugiej maszynie.
+3	Cztery diamenty do prasy, zamknij i otwórz; pył zdmuchnij do słoika. W szlifierce: diamenty i pył, uderz głową Lenina, przekręć dźwignię, wyjmij w rękawicach.
+
+= Osioł
+@ osiol, osioł, ogrod, ogród
+1	Osioł nigdzie się nie ruszy bez zachęty.
+2	Niebieskie nasiona posadzone przed warsztatem i podlane wodą dadzą marchewkę.
+3	Sznurek do kija, marchewka na sznurek. Obaj wsiadają na osła przy panelu: Franc polewa go wodą, Edek macha marchewką.
+
+[etap 4]
+= Oceania
+@ *
+1	Ostatnia część ACME leży w wodzie — potrzebna będzie wędka i bardzo duży magnes.
+2	W chacie jest kocioł i przepis na eliksir, który powiększa rzeczy.
+3	Eliksir wylany na petardy i magnes zrobi z nich olbrzymy.
+4	Olbrzymi magnes na wędkę — wyłowisz metalową małżę. Olbrzymie petardy pod kocioł, podpal lustrem i wejdźcie do kotła.
+
+= Lądowisko
+@ lad, lądow, jaj, gniazd
+1	Jajko jest wysoko i łatwo się rozbije.
+2	Podłóż pod jajko coś miękkiego, a potem potrząśnij gałęzią.
+3	Futrzaka połóż pod jajkiem, potrząśnij gałęzią trzy razy i weź jajko. Weź też martwego robaka.
+
+= Plaża i liana
+@ plaz, plaż, lian, brzeg
+1	Na drugi brzeg nie przejdziesz bez czegoś ciężkiego.
+2	Kamień przywiązany do środkowej liany pomoże się przeprawić.
+3	Przywiąż kamień do środkowej liany i przepraw się. Zabierz kłodę i lustro.
+
+= Chata
+@ chat, kocio, kocioł, szama
+1	Przeczytaj, co leży w chacie — to przepis.
+2	Pająka da się usmażyć lustrem, a woda jest w rurze.
+3	Weź miech, przepis, klucz, pojemnik i pudełko z półki. Edek lustrem usmaża pająka i bierze pajęczynę. Kluczem uderz w rurę i napełnij pojemnik wodą.
+4	Do kotła: dwa robaki, kłoda, pudełko, pajęczyna i woda. Podgrzej lustrem i przelej wywar do pojemnika.
+
+= Wejście i strażnik
+@ czaszk, drzwi, wartow
+1	Nad drzwiami wisi coś, co ma w sobie monetę.
+2	Dmuchnij w czaszkę miechem.
+3	Miechem dmuchnij w czaszkę nad drzwiami, weź monetę i daj ją strażnikowi.
+
+= Port
+@ port, molo, pomost, przystan
+1	Rybak nie odda wędki po dobroci.
+2	Gałęzią wyciągnij kraba z wiadra — rybak będzie miał kłopot.
+3	Krab szczypie rybaka, ten odpływa, a ty bierzesz wędkę. Na górnym pomoście zakręć korbą i weź szkielet ryby-młota. Iskry z kołowrotu zrobią z podkowy magnes.
+
+= Autobus i tancerze
+@ autob, tanc, tańc
+1	Kobieta przy autobusie ma żyłkę, a tancerze nie lubią pewnej ryby.
+2	Wędką „zaczep” kobietę przy autobusie. Rybą-młotem rozbijesz skrzynkę.
+3	Weź od kobiety żyłkę i podkowę i przywiąż żyłkę do wędki. Rybą-młotem rozbij skrzynkę z petardami. Złowioną rybę połóż przed tancerzami; drugi robak leży przy nich.
+
+[etap 5]
+= Finał
+@ *
+1	Masz już wszystkie części — czas je złożyć.
+2	Złóż ACME z zebranych części i obejrzyj zakończenie.

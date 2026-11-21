@@ -266,8 +266,66 @@ TEST(item_name_shown_above_panel_while_hovered)
     SubtitlesUnload();
 }
 
+/* ---- text/hints.c ------------------------------------------------------ */
+
+static const char HINTS_SAMPLE[] =
+    "\xEF\xBB\xBF# test\n"
+    "[etap 1]\n"
+    "= Og\xC3\xB3lnie\n"
+    "@ *\n"
+    "1\tCel etapu\n"
+    "= Kiosk\n"
+    "@ kiosk, ulica\n"
+    "1\tNudge\n"
+    "2\tKonkret\n"
+    "3\tRozwiazanie\n"
+    "= Bez poziomow\n"
+    "@ pusty\n"
+    "[etap 2]\n"
+    "= Stacja\n"
+    "@ stacja\n"
+    "1\tA\n";
+
+TEST(hints_parse_and_find)
+{
+    ASSERT_EQ(HintsLoadBuffer(HINTS_SAMPLE, sizeof HINTS_SAMPLE - 1), 3);
+    ASSERT_EQ(HintsFindTopic(1, "KIOSK2", NULL), 1);       /* key, any case */
+    ASSERT_EQ(HintsFindTopic(1, "xx", "ulica_noc.pic"), 1); /* .pic matches  */
+    ASSERT_EQ(HintsFindTopic(1, "pusty", NULL), 0);         /* no levels → general */
+    ASSERT_EQ(HintsFindTopic(1, NULL, NULL), 0);
+    ASSERT_EQ(HintsFindTopic(2, "x", NULL), 2);             /* only topic    */
+    ASSERT_EQ(HintsFindTopic(3, "x", NULL), -1);
+    HintsUnload();
+}
+
+TEST(hints_levels_wait)
+{
+    extern int g_hint_wait;
+    char out[256];
+    g_hint_wait = 180;
+    HintsLoadBuffer(HINTS_SAMPLE, sizeof HINTS_SAMPLE - 1);
+    HintsPress(1, 1000, out, sizeof out);                   /* first: now   */
+    ASSERT_TRUE(strstr(out, "1/3") && strstr(out, "Nudge") && strstr(out, "kolejna za 3:00"));
+    HintsPress(1, 61000, out, sizeof out);                  /* too early    */
+    ASSERT_TRUE(strstr(out, "1/3") && strstr(out, "kolejna za 2:00"));
+    HintsPress(1, 181000, out, sizeof out);                 /* 3 min later  */
+    ASSERT_TRUE(strstr(out, "2/3") && strstr(out, "Konkret"));
+    HintsPress(1, 361000, out, sizeof out);
+    ASSERT_TRUE(strstr(out, "3/3") && strstr(out, "Rozwiazanie") && strstr(out, "rozwi"));
+    HintsPress(1, 999000, out, sizeof out);                 /* stays at 3/3 */
+    ASSERT_TRUE(strstr(out, "3/3") != NULL);
+    HintsReset();
+    HintsPress(1, 1000000, out, sizeof out);
+    ASSERT_TRUE(strstr(out, "1/3") != NULL);
+    HintsPress(-1, 0, out, sizeof out);
+    ASSERT_TRUE(strstr(out, "Brak") != NULL);
+    HintsUnload();
+}
+
 SUITE(subtitles)
 {
+    RUN_TEST(hints_parse_and_find);
+    RUN_TEST(hints_levels_wait);
     RUN_TEST(item_name_shown_above_panel_while_hovered);
     RUN_TEST(menu_hint_shows_without_file_or_option);
     RUN_TEST(parse_counts_entries);

@@ -147,6 +147,7 @@ Pełny przewodnik (3 sposoby, w tym uwaga o macOS 15 Sequoia):
 | Napisy dla niesłyszących | `F4`              |
 | Obraz: panorama / panorama z paskami / 4:3 | `F7` |
 | Statystyki gry        | `F10`                |
+| Podpowiedź (gdy włączone żarówką w Opcjach) | `H` |
 
 `F1`–`F4` pokazują nowy stan u góry ekranu i zapamiętują go w `wacki.cfg`.
 Kolory: oryginalne → żywe → bardzo żywe → jaśniejsze.

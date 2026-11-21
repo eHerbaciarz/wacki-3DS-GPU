@@ -467,7 +467,12 @@ static int OpszynsClick(int trigger)
     case OPSZYNS_BTN_EXIT:
         return OPSZYNS_RC_CLOSE;
 
+    case 0:                          /* MENU_INIT_TRIGGER: the bulb */
+        HintIconBegin();
+        return OPSZYNS_RC_KEEP_OPEN;
+
     default:
+        HintIconUpdate();            /* hints on/off (menu/subs_icons.c) */
         return OPSZYNS_RC_KEEP_OPEN;
     }
 }
@@ -476,6 +481,7 @@ static SceneDef g_opszyns_scene = {
     .background_pic = "opszyns.pic",
     .mask_file      = "opszyns.wyc",
     .on_click       = OpszynsClick,
+    .after_paint    = HintIconPaint,
     .button_count   = OPSZYNS_BUTTON_COUNT,
     .flags          = SCENE_FLAG_REDRAW | SCENE_FLAG_FADE,
     .buttons = {

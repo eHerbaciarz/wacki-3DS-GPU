@@ -71,8 +71,11 @@ uint8_t PlatformPollTypedChar(void)
     }
 }
 
+static int s_typing = 0;           /* a save name is being typed */
+
 void PlatformSetTextInput(int on)
 {
+    s_typing = on ? 1 : 0;
     if (g_headless) return;
     if (on) SDL_StartTextInput(); else SDL_StopTextInput();
     s_typed_head = s_typed_tail = 0;
@@ -159,6 +162,8 @@ static void handle_keydown(const SDL_Event *ev)
     if (sym == SDLK_F1)  ColorFilterCycle();
     if (sym == SDLK_F2)  OptionsToggleSubtitles();
     if (sym == SDLK_F4)  OptionsToggleSdh();
+    /* H: hints (off by default — the bulb in Options), not while typing */
+    if (sym == SDLK_h && !s_typing) HintsRequest();
 #endif
     if (sym == SDLK_TAB) g_rmb_clicked = 1;
     if (sym == SDLK_BACKSPACE) PlatformPushTypedChar(ASCII_BACKSPACE);

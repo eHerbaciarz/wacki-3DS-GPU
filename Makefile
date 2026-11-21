@@ -125,7 +125,7 @@ ENGINE_SRCS = \
 	src/anim/paint_primitives.c src/anim/alpha_blit.c             \
 	src/menu/chapter_select.c src/menu/slot_picker.c                 \
 	src/menu/options.c        src/menu/menu_loop.c                   \
-	src/menu/subs_icons.c                                            \
+	src/menu/subs_icons.c     src/text/hints.c                       \
 	src/menu/main_menu.c      src/menu/port_attribution.c
 
 # Shared platform building blocks referenced by mk/{desktop,miyoo,portmaster}.mk
@@ -251,7 +251,7 @@ TEST_ENGINE_SRCS = \
 	src/scene/bg_mask.c src/scene/spawn.c src/scene/komnata.c     \
 	src/audio/sound_queue.c   src/audio/sfx.c                    \
 	src/script_bridge/palette.c src/script_bridge/entity.c        \
-	src/text/balloon.c src/text/dialog.c src/text/subtitles.c     \
+	src/text/balloon.c src/text/dialog.c src/text/subtitles.c src/text/hints.c \
 	src/util/color_filter.c src/util/pixel_filters.c src/util/wide_layout.c              \
 	src/anim/resolver.c                                           \
 	src/stubs.c     src/actor/intern.c    src/actor/registration.c \

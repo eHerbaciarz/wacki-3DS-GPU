@@ -31,6 +31,7 @@ extern int  g_fullscreen;
 extern char g_subtitles_lang[16];   /* text/subtitles.c */
 extern int  g_subtitles_speakers;
 extern int  g_subtitles_sounds;
+extern int  g_hints_on, g_hint_wait;
 int         g_zoom_filter = -1;     /* 3DS bottom-screen zoom; -1 = default */
 int         g_smoothing   = -1;     /* PC smoothing: -1 = --scale-mode / default */
 int         g_wide_top    = -1;     /* 3DS 800-px top screen: -1 = default (on) */
@@ -89,6 +90,10 @@ void ConfigLoad(void)
             g_subtitles_speakers = v < 0 ? -1 : (v ? 1 : 0);
         else if (sscanf(line,"subtitles_sounds=%d",&v)==1)
             g_subtitles_sounds = v < 0 ? -1 : (v ? 1 : 0);
+        else if (sscanf(line,"hint_wait=%d",&v)==1)
+            g_hint_wait = v < 0 ? 0 : v;
+        else if (sscanf(line,"hints=%d",&v)==1)
+            g_hints_on = v ? 1 : 0;
         else if (sscanf(line,"color_filter=%d",&v)==1)
             g_color_filter = (v >= 0 && v < COLOR_FILTER_COUNT) ? v : -1;
         else if (sscanf(line,"zoom_filter=%d",&v)==1)
@@ -119,6 +124,10 @@ void ConfigSave(void)
     fprintf(fp,"# imiona mowcow / opisy dzwiekow: 1 tak, 0 nie, -1 jak w pliku napisow\n");
     fprintf(fp,"subtitles_speakers=%d\n", g_subtitles_speakers);
     fprintf(fp,"subtitles_sounds=%d\n",   g_subtitles_sounds);
+    fprintf(fp,"# podpowiedzi (zarowka w Opcjach): 1 wlaczone, 0 wylaczone; plik podpowiedzi/<jezyk>.txt\n");
+    fprintf(fp,"hints=%d\n", g_hints_on);
+    fprintf(fp,"# ile sekund czekac na kolejny stopien podpowiedzi\n");
+    fprintf(fp,"hint_wait=%d\n", g_hint_wait);
     fprintf(fp,"# kolory: 0 oryginalne, 1 zywe, 2 bardzo zywe, 3 jasniejsze (-1 domyslne)\n");
     fprintf(fp,"color_filter=%d\n", g_color_filter);
     fprintf(fp,"# 3DS zoom na dolnym ekranie: 0 ostry, 1 gladki, 2 Scale2x, 3 2xSaI, 4 xBR\n");

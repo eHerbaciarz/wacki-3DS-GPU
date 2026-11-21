@@ -62,10 +62,27 @@ void platform_pad_open(void)
 
 /* Handle one SDL_CONTROLLER* event. Returns 1 if consumed. Button layout
  * matches the Miyoo mapping so muscle memory carries across handhelds. */
+/* BACK/View is a modifier: BACK + X = hint (text/hints.c); BACK on its
+ * own = colour filter, on release when no combo was used. */
+static int s_back_combo = 0;
+
 int platform_pad_handle_event(const SDL_Event *ev)
 {
+    int back_held = s_pad &&
+        SDL_GameControllerGetButton(s_pad, SDL_CONTROLLER_BUTTON_BACK);
     switch (ev->type) {
+    case SDL_CONTROLLERBUTTONUP:
+        if (ev->cbutton.button == SDL_CONTROLLER_BUTTON_BACK) {
+            if (!s_back_combo) ColorFilterCycle();
+            return 1;
+        }
+        return 0;
     case SDL_CONTROLLERBUTTONDOWN:
+        if (ev->cbutton.button == SDL_CONTROLLER_BUTTON_X && back_held) {
+            HintsRequest();
+            s_back_combo = 1;
+            return 1;
+        }
         switch (ev->cbutton.button) {
         case SDL_CONTROLLER_BUTTON_A:             g_lmb_clicked        = 1; break;
         case SDL_CONTROLLER_BUTTON_B:             g_rmb_clicked        = 1; break;
@@ -73,9 +90,10 @@ int platform_pad_handle_event(const SDL_Event *ev)
         case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:  g_quickload_request  = 1; break;
         case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: g_quicksave_request  = 1; break;
         /* like the Vita: Y = picture (panorama / bars / 4:3, = F7),
-         * BACK/View = colour filter (= F1) — no F keys on a Steam Deck */
+         * BACK/View = colour filter (= F1, on release, see above) —
+         * no F keys on a Steam Deck */
         case SDL_CONTROLLER_BUTTON_Y:             platform_video_toggle_aspect_mode(); break;
-        case SDL_CONTROLLER_BUTTON_BACK:          ColorFilterCycle(); break;
+        case SDL_CONTROLLER_BUTTON_BACK:          s_back_combo = 0; break;
         default: return 0;
         }
         return 1;

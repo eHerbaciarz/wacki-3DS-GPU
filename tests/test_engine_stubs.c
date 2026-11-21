@@ -360,6 +360,7 @@ void vm_stubs_reset(void)
 char g_data_root[260]   = "";
 int  g_cutscene_playing = 0;
 char g_aspect_mode[16]  = "wide";
+const DemoScene *g_current_scene = NULL;
 
 /* util/color_filter.c's ColorFilterCycle saves wacki.cfg; config.c is not
  * part of the test build. */

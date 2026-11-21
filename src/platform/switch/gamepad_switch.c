@@ -66,6 +66,12 @@ int platform_pad_handle_event(const SDL_Event *ev)
         }
         return 0;
     case SDL_CONTROLLERBUTTONDOWN:
+        /* MINUS + physical Y (west = SDL X) = hint (text/hints.c) */
+        if (ev->cbutton.button == SDL_CONTROLLER_BUTTON_X && minus_held) {
+            HintsRequest();
+            s_minus_combo = 1;
+            return 1;
+        }
         if (ev->cbutton.button == SDL_CONTROLLER_BUTTON_Y && minus_held) {
             ColorFilterCycle();
             s_minus_combo = 1;

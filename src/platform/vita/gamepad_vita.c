@@ -43,18 +43,35 @@ void platform_pad_open(void)
     }
 }
 
+/* SELECT is a modifier: SELECT + square = hint (text/hints.c); SELECT on
+ * its own = colour filter, on release when no combo was used. */
+static int s_select_combo = 0;
+
 int platform_pad_handle_event(const SDL_Event *ev)
 {
+    int select_held = s_pad &&
+        SDL_GameControllerGetButton(s_pad, SDL_CONTROLLER_BUTTON_BACK);
     switch (ev->type) {
+    case SDL_CONTROLLERBUTTONUP:
+        if (ev->cbutton.button == SDL_CONTROLLER_BUTTON_BACK) {
+            if (!s_select_combo) ColorFilterCycle();
+            return 1;
+        }
+        return 0;
     case SDL_CONTROLLERBUTTONDOWN:
+        if (ev->cbutton.button == SDL_CONTROLLER_BUTTON_X && select_held) {
+            HintsRequest();
+            s_select_combo = 1;
+            return 1;
+        }
         switch (ev->cbutton.button) {
         case SDL_CONTROLLER_BUTTON_A:             g_lmb_clicked        = 1; break;
         case SDL_CONTROLLER_BUTTON_B:             g_rmb_clicked        = 1; break;
         case SDL_CONTROLLER_BUTTON_Y:             platform_video_toggle_aspect_mode(); break;
         case SDL_CONTROLLER_BUTTON_X:             platform_touch_cycle_mode();         break;
         case SDL_CONTROLLER_BUTTON_START:         g_pause_menu_request = 1; break;
-        /* SELECT (unused before) = colour filter, with a hint */
-        case SDL_CONTROLLER_BUTTON_BACK:          ColorFilterCycle();               break;
+        /* SELECT = colour filter on release (above) / modifier */
+        case SDL_CONTROLLER_BUTTON_BACK:          s_select_combo = 0;               break;
         case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:  g_quickload_request  = 1; break;
         case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: g_quicksave_request  = 1; break;
         default: return 0;
