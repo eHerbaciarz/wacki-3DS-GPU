@@ -233,7 +233,8 @@ void HintsPress(int topic, uint32_t now, char *out, size_t cap)
         if (t->nlevels > 1) snprintf(tail, sizeof tail, "|(to ju\xC5\xBC rozwi\xC4\x85zanie)");
     } else {
         uint32_t left = (now - t->last_ms >= wait) ? 0 : (wait - (now - t->last_ms) + 999) / 1000;
-        if (left) snprintf(tail, sizeof tail, "|(kolejna za %u:%02u)", left / 60, left % 60);
+        if (left) snprintf(tail, sizeof tail, "|(kolejna za %u:%02u)",
+                           (unsigned)(left / 60), (unsigned)(left % 60));
     }
     snprintf(out, cap, "Podpowied\xC5\xBA %d/%d (%s): %s%s",
              lv + 1, t->nlevels, t->title, t->level[lv], tail);
