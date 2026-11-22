@@ -1,26 +1,77 @@
-# Wacki: Kosmiczna rozgrywka
+# Wacki: Kosmiczna rozgrywka — 3DS · Vita · Switch · PC · Steam Deck
 
-[![Latest release](https://img.shields.io/github/v/release/mszula/wacki?sort=semver&style=flat-square&label=release&color=6f42c1)](../../releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/mszula/wacki/total?style=flat-square&label=downloads&color=44cc11&logo=github&logoColor=white)](../../releases)
-[![Platforms](https://img.shields.io/badge/platforms-macOS%20%C2%B7%20Linux%20%C2%B7%20Windows%20%C2%B7%20Android%20%C2%B7%20Miyoo%20%C2%B7%20PortMaster%20%C2%B7%20PS2-1f6feb?style=flat-square)](../../releases)
-[![Language](https://img.shields.io/badge/C99-SDL2-555555?style=flat-square&logo=c&logoColor=white)](#)
-[![License](https://img.shields.io/github/license/mszula/wacki?style=flat-square&label=license&color=blue)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/mszula/wacki?style=flat-square&label=stars&logo=github&logoColor=white)](../../stargazers)
-[![Website](https://img.shields.io/badge/website-mszula.github.io%2Fwacki-0a66c2?style=flat-square&logo=githubpages&logoColor=white)](https://mszula.github.io/wacki/)
+[![Wydanie](https://img.shields.io/github/v/release/eHerbaciarz/wacki-3DS-GPU?style=flat-square&label=wydanie&color=6f42c1)](../../releases/latest)
+[![Platformy](https://img.shields.io/badge/platformy-3DS%20%C2%B7%20Vita%20%C2%B7%20Switch%20%C2%B7%20Windows%20%C2%B7%20Steam%20Deck-1f6feb?style=flat-square)](../../releases)
+[![Licencja](https://img.shields.io/badge/licencja-GPL--3.0-blue?style=flat-square)](LICENSE)
 
-A faithful, cross-platform port of **Wacki: Kosmiczna rozgrywka**
-(1998) — a Polish point-and-click adventure — reconstructed from the
-decompiled `WACKI.EXE`. It runs on desktop (macOS / Linux / Windows),
-on Android phones and tablets, on handhelds (Miyoo, plus Anbernic and
-dozens more via PortMaster), and on the PlayStation 2.
-The game is in Polish, set in Poland, and was made in Poland; for that
-reason the rest of this README is in Polish too.
+Port polskiej przygodówki **Wacki: Kosmiczna rozgrywka** (1998) na konsole
+przenośne i PC — rozwijany przez **Herbaciarza** na bazie portu
+[**mszula/wacki**](https://github.com/mszula/wacki) (silnik odtworzony
+z `WACKI.EXE`) i portów na 3DS / Vitę / Switcha z
+[**szczuru/wacki**](https://github.com/szczuru/wacki).
+
+*English: a handheld/PC fork of the Wacki engine port (mszula/wacki,
+szczuru/wacki) with GPU rendering on 3DS and Vita, widescreen with a
+sliding inventory, subtitles (incl. for the deaf, translatable),
+colour/pixel filters and optional hints. The game is Polish, so the
+rest is in Polish. You need the original game files.*
 
 ![Wacki: Kosmiczna rozgrywka](docs/img/wacki.png)
 
-> **Najszybszy start:** wejdź na **[mszula.github.io/wacki](https://mszula.github.io/wacki/)**
-> — wybierz swój sprzęt i przejdź ilustrowaną instrukcję krok po kroku.
-> Ten README to skrócona wersja tego samego.
+## ✨ Co jest w tej wersji
+
+- **3DS:** rysowanie przez GPU (citro3d) zamiast procesora — dużo
+  płynniej; wygładzanie, poprawione **3D** (tło za ekranem), tryb
+  800 px na New 3DS, filtry powiększania (Scale2x / 2xSaI / xBR),
+  log wydajności na karcie SD. → [docs/3ds-gpu.md](docs/3ds-gpu.md)
+- **PS Vita:** rysowanie przez GPU, pełne taktowanie, ostre
+  wygładzanie. → [docs/vita-gpu.md](docs/vita-gpu.md)
+- **Panorama 16:9 / 16:10** (PC, Switch, Vita, 3DS, Steam Deck): scena
+  bez rozciągania, a panel z przedmiotami chowa się i wysuwa, gdy
+  kursor dojedzie do dolnej krawędzi. Jeden przycisk: panorama
+  przycięta → z paskami → oryginał 4:3. → [docs/panorama.md](docs/panorama.md)
+- **Napisy** do dialogów, filmów i nazw przedmiotów, także **dla
+  niesłyszących** (kto mówi, opisy dźwięków), w dowolnym języku —
+  w menu dźwięku **ucho** (włącz/wyłącz) i **flagi** (język).
+  → [docs/napisy.md](docs/napisy.md)
+- **Podpowiedzi** — domyślnie wyłączone, włącza je **żarówka**
+  w Opcjach; kolejny stopień dopiero po 3 minutach.
+  → [docs/podpowiedzi.md](docs/podpowiedzi.md)
+- **Filtry kolorów** na wszystkich platformach.
+- **Windows i Steam Deck:** gotowy program bez instalacji, sam
+  wczytuje `WACKI.EXE` z folderu gry.
+
+## 📦 Instalacja
+
+Pobierz paczkę z zakładki [**Releases**](../../releases). Do gry są
+potrzebne pliki z **oryginalnej płyty**: `Dane_*.dta` i `WACKI.EXE` —
+ta wersja ich nie zawiera. Folder `podpowiedzi` (i ewentualnie
+`napisy`) kopiujesz obok plików gry.
+
+| Platforma | Plik | Pliki gry |
+|---|---|---|
+| 🎮 **3DS** (najlepiej New 3DS) | `.3dsx` (Homebrew Launcher) albo `.cia` | `sdmc:/3ds/wacki/` |
+| 🎮 **PS Vita** | `.vpk` (VitaShell) | `ux0:/data/wacki/` |
+| 🎮 **Switch** | `.nro` (Homebrew Menu) | `sdmc:/switch/wacki/` |
+| 🪟 **Windows** 10/11 | `wacki-pc-*.exe` — połóż **obok** oryginalnego `WACKI.EXE`, nie zmieniaj nazwy na `wacki.exe` | folder gry |
+| 🐧 **Steam Deck / Linux** | `wacki-linux-steamdeck-*.tar.gz` (albo `.exe` przez Protona) | folder gry |
+
+### Najważniejsze przyciski
+
+| | PC | Switch | Vita | 3DS |
+|---|---|---|---|---|
+| Obraz: panorama / z paskami / 4:3 | `F7` | X | trójkąt | Y |
+| Kolory | `F1` | − + X | SELECT | SELECT + Y |
+| Podpowiedź (po włączeniu) | `H` | − + Y | SELECT + kwadrat | SELECT + A |
+| Napisy / dla niesłyszących | `F2` / `F4` | menu dźwięku | menu dźwięku | menu dźwięku |
+
+Na padzie na PC i Steam Decku: Y = obraz, View = kolory, View + X = podpowiedź.
+
+---
+
+Poniżej oryginalny opis portu **mszula/wacki** (platformy: macOS,
+Linux, Windows, Android, Miyoo, PortMaster, PS2 — ich paczki są
+w [releases mszuli](https://github.com/mszula/wacki/releases)).
 
 ## 👽 O grze
 
@@ -500,7 +551,7 @@ też smiało, ale w issue zaznacz `[feature]` lub `[question]` w tytule.
 
 ---
 
-## ☕ Wsparcie
+## ☕ Wsparcie (autor portu silnika)
 
 Wacki portuję po godzinach, za darmo i z czystej miłości do tej
 zwariowanej gry. Jeśli port przywołał uśmiech (albo łezkę nostalgii)
@@ -531,6 +582,10 @@ dystrybuowane wraz z tym repozytorium — licencja GPL v3 obejmuje
 wyłącznie kod portu, nie zawartość oryginalnej gry.
 
 ## Podziękowania
+
+- **Mateusz Szuła (mszula)** — port silnika: [mszula/wacki](https://github.com/mszula/wacki)
+- **szczuru** — porty na 3DS, PS Vita i Switcha: [szczuru/wacki](https://github.com/szczuru/wacki)
+- **Herbaciarz** — ta wersja: GPU na 3DS i Vicie, panorama, napisy, podpowiedzi
 
 - **Seven Stars Multimedia** — twórcy oryginalnej gry (1998)
 - TopWare Interactive Polska — wydawca oryginalny
