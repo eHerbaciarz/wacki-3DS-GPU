@@ -17,7 +17,7 @@
 # silently degrades to "unknown" — which is what used to ship on the menu.
 # Callers capture this and pass it into the container (WACKI_VERSION=...).
 wacki_version() {
-    git describe --tags --always --dirty 2>/dev/null || echo unknown
+    cat VERSION 2>/dev/null || git describe --tags --always --dirty 2>/dev/null || echo unknown
 }
 
 # ---- preflight checks ------------------------------------------------------

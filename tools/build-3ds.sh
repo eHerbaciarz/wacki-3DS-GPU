@@ -15,7 +15,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # Version from git on the HOST (before entering Docker)
-WACKI_VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
+WACKI_VERSION=$(cat VERSION 2>/dev/null || git describe --tags --always --dirty 2>/dev/null || echo "dev")
 
 DKP="${DEVKITPRO:-/opt/devkitpro}"
 have_local() {

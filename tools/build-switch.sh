@@ -3,7 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 # Get version from git on HOST (before entering Docker)
-WACKI_VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
+WACKI_VERSION=$(cat VERSION 2>/dev/null || git describe --tags --always --dirty 2>/dev/null || echo "dev")
 
 docker run --rm -v "$PWD:/wacki" -w /wacki devkitpro/devkita64:latest sh -c '
     set -e
