@@ -48,6 +48,8 @@ void plat_video_toggle_fullscreen(void);
  * smoothing follows the Grafika menu's first button (Switch, Vita, 3DS)
  * this only says so. */
 void plat_video_toggle_smoothing(void);
+/* F6: pixel-art 2x filter off -> Scale2x -> 2xSaI -> xBR (SDL backends) */
+void plat_video_cycle_pixel_filter(void);
 
 /* Show a native message box parented to the game window. A no-op where there
  * is no SDL display (PS2); the headless-mode logging path is handled by the

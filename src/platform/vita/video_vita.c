@@ -346,6 +346,13 @@ void plat_video_toggle_smoothing(void)
     SubtitlesHint("Wyg\xC5\x82""adzanie: pierwszy przycisk w menu Grafika", 2500);
 }
 
+/* Pixel-art 2x filters are on the PC / Switch (video_sdl.c); the Vita
+ * has its sharp bilinear instead. */
+void plat_video_cycle_pixel_filter(void)
+{
+    SubtitlesHint("Filtr pikseli: na Vicie jest ostre wyg\xC5\x82""adzanie (menu Grafika)", 2500);
+}
+
 /* No windows on the Vita: always full screen. */
 void plat_video_toggle_fullscreen(void) {}
 

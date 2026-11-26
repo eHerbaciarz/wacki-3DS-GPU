@@ -37,7 +37,8 @@ rest is in Polish. You need the original game files.*
 - **Podpowiedzi** — domyślnie wyłączone, włącza je **żarówka**
   w Opcjach; kolejny stopień dopiero po 3 minutach.
   → [docs/podpowiedzi.md](docs/podpowiedzi.md)
-- **Filtry kolorów** na wszystkich platformach.
+- **Filtry kolorów** na wszystkich platformach, a na PC, Switchu i Steam
+  Decku **filtry pikseli** Scale2x / 2xSaI / xBR (`F6`).
 - **Windows i Steam Deck:** gotowy program bez instalacji, sam
   wczytuje `WACKI.EXE` z folderu gry.
 
@@ -62,10 +63,11 @@ ta wersja ich nie zawiera. Folder `podpowiedzi` (i ewentualnie
 |---|---|---|---|---|
 | Obraz: panorama / z paskami / 4:3 | `F7` | X | trójkąt | Y |
 | Kolory | `F1` | − + X | SELECT | SELECT + Y |
+| Filtr pikseli (Scale2x / 2xSaI / xBR) | `F6` | − + R | — | SELECT + X (dolny ekran) |
 | Podpowiedź (po włączeniu) | `H` | − + Y | SELECT + kwadrat | SELECT + A |
 | Napisy / dla niesłyszących | `F2` / `F4` | menu dźwięku | menu dźwięku | menu dźwięku |
 
-Na padzie na PC i Steam Decku: Y = obraz, View = kolory, View + X = podpowiedź.
+Na padzie na PC i Steam Decku: Y = obraz, View = kolory, View + X = podpowiedź, View + RB = filtr pikseli.
 
 ---
 

@@ -52,10 +52,10 @@ static inline void put(uint32_t *out, int w2, int x, int y,
     row[w2] = e2; row[w2 + 1] = e3;
 }
 
-static void do_scale2x(const Src *s, uint32_t *out)
+static void do_scale2x(const Src *s, uint32_t *out, int y0, int y1)
 {
     const int w2 = s->w * 2;
-    for (int y = 0; y < s->h; ++y)
+    for (int y = y0; y < y1; ++y)
         for (int x = 0; x < s->w; ++x) {
             uint32_t b = at(s, x, y - 1), d = at(s, x - 1, y), e = at(s, x, y);
             uint32_t f = at(s, x + 1, y), h = at(s, x, y + 1);
@@ -87,10 +87,10 @@ static int result2(uint32_t a, uint32_t b, uint32_t c, uint32_t d)
     return r;
 }
 
-static void do_sai2x(const Src *s, uint32_t *out)
+static void do_sai2x(const Src *s, uint32_t *out, int y0, int y1)
 {
     const int w2 = s->w * 2;
-    for (int y = 0; y < s->h; ++y)
+    for (int y = y0; y < y1; ++y)
         for (int x = 0; x < s->w; ++x) {
             /*  I E F J
              *  G A B K
@@ -159,16 +159,23 @@ static inline int ydist(int32_t a, int32_t b)
     return 48 * (dy < 0 ? -dy : dy) + 7 * (du < 0 ? -du : du) + 6 * (dv < 0 ? -dv : dv);
 }
 
-static void do_xbr2x(const Src *s, uint32_t *out)
+/* YUV of every source pixel, once per frame (shared by the row bands). */
+static int xbr_prepare(const Src *s)
 {
-    const int w = s->w, h = s->h, w2 = w * 2;
-    size_t n = (size_t)w * h;
+    size_t n = (size_t)s->w * s->h;
     if (s_yuv_cap < n) {
         int32_t *ny = (int32_t *)realloc(s_yuv, n * sizeof *ny);
-        if (!ny) { do_scale2x(s, out); return; }
+        if (!ny) return 0;
         s_yuv = ny; s_yuv_cap = n;
     }
     for (size_t i = 0; i < n; ++i) s_yuv[i] = yuv_of(s->px[i]);
+    return 1;
+}
+
+static void do_xbr2x(const Src *s, uint32_t *out, int y0, int y1)
+{
+    const int w = s->w, h = s->h, w2 = w * 2;
+    if (!s_yuv || s_yuv_cap < (size_t)w * h) { do_scale2x(s, out, y0, y1); return; }
 
     /* Neighbour offsets for the bottom-right corner; the other three
      * corners are the same turned by 90° ((dx,dy) → (dy,-dx)). Order:
@@ -184,7 +191,7 @@ static void do_xbr2x(const Src *s, uint32_t *out)
             off[k][m][0] = dx; off[k][m][1] = dy;
         }
 
-    for (int y = 0; y < h; ++y)
+    for (int y = y0; y < y1; ++y)
         for (int x = 0; x < w; ++x) {
             const size_t ie = (size_t)y * w + x;
             const uint32_t E = s->px[ie];
@@ -218,12 +225,30 @@ static void do_xbr2x(const Src *s, uint32_t *out)
         }
 }
 
-void PixelUpscale2x(int kind, const uint32_t *src, int w, int h, uint32_t *out)
+/* Per-frame setup (xBR: the YUV table). Call before the row bands. */
+void PixelUpscale2xPrepare(int kind, const uint32_t *src, int w, int h)
 {
     Src s = { src, w, h };
+    if (kind == PIXF_XBR2X && !xbr_prepare(&s)) { free(s_yuv); s_yuv = NULL; s_yuv_cap = 0; }
+}
+
+/* Source rows y0..y1-1 → output rows 2*y0..2*y1-1. Bands can run in
+ * parallel threads after PixelUpscale2xPrepare(). */
+void PixelUpscale2xRows(int kind, const uint32_t *src, int w, int h,
+                        uint32_t *out, int y0, int y1)
+{
+    Src s = { src, w, h };
+    if (y0 < 0) y0 = 0;
+    if (y1 > h) y1 = h;
     switch (kind) {
-    case PIXF_SAI2X: do_sai2x(&s, out);   break;
-    case PIXF_XBR2X: do_xbr2x(&s, out);   break;
-    default:         do_scale2x(&s, out); break;
+    case PIXF_SAI2X: do_sai2x(&s, out, y0, y1);   break;
+    case PIXF_XBR2X: do_xbr2x(&s, out, y0, y1);   break;
+    default:         do_scale2x(&s, out, y0, y1); break;
     }
+}
+
+void PixelUpscale2x(int kind, const uint32_t *src, int w, int h, uint32_t *out)
+{
+    PixelUpscale2xPrepare(kind, src, w, h);
+    PixelUpscale2xRows(kind, src, w, h, out, 0, h);
 }

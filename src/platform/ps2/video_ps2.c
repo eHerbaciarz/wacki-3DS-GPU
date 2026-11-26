@@ -311,5 +311,9 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *palette_rgb,
 void plat_video_shutdown(void)                                   { }
 void plat_video_toggle_fullscreen(void)                          { }
 void plat_video_message_box(const char *t, const char *b)        { (void)t; (void)b; }
+/* Pad buttons shared with the desktop (gamepad_sdl.c): no panorama or
+ * pixel filters on the PS2 — the picture stays as it is. */
+void platform_video_toggle_aspect_mode(void)                       {}
+void plat_video_cycle_pixel_filter(void)                           {}
 
 #endif /* WACKI_PS2 */

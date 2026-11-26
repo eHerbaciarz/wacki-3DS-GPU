@@ -162,6 +162,7 @@ static void handle_keydown(const SDL_Event *ev)
     if (sym == SDLK_F1)  ColorFilterCycle();
     if (sym == SDLK_F2)  OptionsToggleSubtitles();
     if (sym == SDLK_F4)  OptionsToggleSdh();
+    if (sym == SDLK_F6)  plat_video_cycle_pixel_filter();   /* Scale2x/2xSaI/xBR */
     /* H: hints (off by default — the bulb in Options), not while typing */
     if (sym == SDLK_h && !s_typing) HintsRequest();
 #endif

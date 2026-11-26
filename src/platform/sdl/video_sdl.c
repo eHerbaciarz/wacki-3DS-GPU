@@ -25,6 +25,7 @@
 
 #include <SDL.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define ARGB_BYTES_PER_PIXEL      4
@@ -39,6 +40,131 @@ static SDL_Renderer *s_ren = NULL;
 static SDL_Texture  *s_tex = NULL;
 static uint32_t      s_pixels32[640 * 480];
 static int           s_fb_w = 0, s_fb_h = 0;
+
+/* ---- pixel-art 2x filter (F6 / pad MINUS·View + R): Scale2x, 2xSaI, xBR
+ * (src/util/pixel_filters.c) into a 1280x960 texture. Runs only when the
+ * frame or palette changed, split into row bands over worker threads. */
+extern int g_pixel_filter;                    /* config.c: wacki.cfg pixel_filter= 0..3 */
+static SDL_Texture *s_tex2x = NULL;
+static uint32_t    *s_rgb  = NULL;            /* 640x480 0x00RRGGBB        */
+static uint32_t    *s_up   = NULL;            /* 1280x960                  */
+static uint8_t     *s_last = NULL;            /* last frame + palette      */
+static int          s_last_valid = 0;
+
+#define PF_MAX_THREADS 4
+typedef struct { int kind, w, h, y0, y1; } PfJob;
+static SDL_Thread  *s_pf_thr[PF_MAX_THREADS];
+static SDL_sem     *s_pf_go[PF_MAX_THREADS], *s_pf_done;
+static PfJob        s_pf_job[PF_MAX_THREADS];
+static int          s_pf_nthr = -1;           /* -1: not started          */
+static volatile int s_pf_quit = 0;
+
+static int pf_worker(void *arg)
+{
+    int i = (int)(intptr_t)arg;
+    for (;;) {
+        SDL_SemWait(s_pf_go[i]);
+        if (s_pf_quit) break;
+        PfJob *j = &s_pf_job[i];
+        PixelUpscale2xRows(j->kind, s_rgb, j->w, j->h, s_up, j->y0, j->y1);
+        SDL_SemPost(s_pf_done);
+    }
+    return 0;
+}
+
+static void pf_start_threads(void)
+{
+    if (s_pf_nthr >= 0) return;
+    int n = SDL_GetCPUCount() - 1;
+#ifdef WACKI_SWITCH
+    n = 2;                                    /* + this thread = 3 cores  */
+#endif
+    if (n < 0) n = 0;
+    if (n > PF_MAX_THREADS) n = PF_MAX_THREADS;
+    s_pf_done = n ? SDL_CreateSemaphore(0) : NULL;
+    int ok = 0;
+    for (int i = 0; i < n && s_pf_done; ++i) {
+        s_pf_go[i] = SDL_CreateSemaphore(0);
+        s_pf_thr[i] = s_pf_go[i] ? SDL_CreateThread(pf_worker, "pixfilter", (void *)(intptr_t)i) : NULL;
+        if (!s_pf_thr[i]) break;
+        ++ok;
+    }
+    s_pf_nthr = ok;
+    LOG_INFO("video", "pixel filter: %d worker thread(s)", ok);
+}
+
+static void pf_stop_threads(void)
+{
+    if (s_pf_nthr <= 0) { s_pf_nthr = -1; return; }
+    s_pf_quit = 1;
+    for (int i = 0; i < s_pf_nthr; ++i) { SDL_SemPost(s_pf_go[i]); SDL_WaitThread(s_pf_thr[i], NULL); SDL_DestroySemaphore(s_pf_go[i]); }
+    SDL_DestroySemaphore(s_pf_done);
+    s_pf_nthr = -1;
+    s_pf_quit = 0;
+}
+
+static void pf_run(int kind, int w, int h)
+{
+    PixelUpscale2xPrepare(kind, s_rgb, w, h);
+    int bands = s_pf_nthr + 1;
+    int step = (h + bands - 1) / bands;
+    for (int i = 0; i < s_pf_nthr; ++i) {
+        s_pf_job[i] = (PfJob){ kind, w, h, (i + 1) * step, (i + 2) * step };
+        SDL_SemPost(s_pf_go[i]);
+    }
+    PixelUpscale2xRows(kind, s_rgb, w, h, s_up, 0, step);      /* own band */
+    for (int i = 0; i < s_pf_nthr; ++i) SDL_SemWait(s_pf_done);
+}
+
+/* Filtered texture for this frame, or NULL (filter off / no memory). */
+static SDL_Texture *pf_texture(const uint8_t *shadow, const uint8_t *pal, int w, int h)
+{
+    int kind = g_pixel_filter;
+    if (kind <= 0 || w > 640 || h > 480) return NULL;
+    size_t n = (size_t)w * h;
+    if (!s_rgb)  s_rgb  = (uint32_t *)malloc(640 * 480 * 4);
+    if (!s_up)   s_up   = (uint32_t *)malloc(1280 * 960 * 4);
+    if (!s_last) s_last = (uint8_t *)malloc(640 * 480 + 768 + 8);
+    if (!s_rgb || !s_up || !s_last) return NULL;
+    if (!s_tex2x) {
+        s_tex2x = SDL_CreateTexture(s_ren, SDL_PIXELFORMAT_RGB888,
+                                    SDL_TEXTUREACCESS_STREAMING, 1280, 960);
+        if (!s_tex2x) return NULL;
+        SDL_ScaleMode m = SDL_ScaleModeNearest;
+        if (s_tex) SDL_GetTextureScaleMode(s_tex, &m);
+        SDL_SetTextureScaleMode(s_tex2x, m);
+        s_last_valid = 0;
+    }
+    pf_start_threads();
+    uint8_t *lp = s_last;
+    if (s_last_valid && lp[0] == (uint8_t)kind && lp[1] == (uint8_t)(w >> 4) &&
+        memcmp(lp + 8, shadow, n) == 0 && memcmp(lp + 8 + n, pal, 768) == 0)
+        return s_tex2x;                                  /* unchanged */
+    lp[0] = (uint8_t)kind; lp[1] = (uint8_t)(w >> 4);
+    memcpy(lp + 8, shadow, n);
+    memcpy(lp + 8 + n, pal, 768);
+    s_last_valid = 1;
+    for (size_t i = 0; i < n; ++i) {
+        const uint8_t *e = pal + shadow[i] * 3;
+        s_rgb[i] = ((uint32_t)e[0] << 16) | ((uint32_t)e[1] << 8) | e[2];
+    }
+    pf_run(kind, w, h);
+    SDL_UpdateTexture(s_tex2x, NULL, s_up, w * 2 * 4);
+    return s_tex2x;
+}
+
+void plat_video_cycle_pixel_filter(void)
+{
+    extern void ConfigSave(void);
+    static const char *const names[4] = {
+        "Filtr pikseli: wy\xC5\x82\xC4\x85""czony", "Filtr pikseli: Scale2x (ostry)",
+        "Filtr pikseli: 2xSaI (g\xC5\x82""adki)", "Filtr pikseli: xBR (kraw\xC4\x99""dzie)" };
+    g_pixel_filter = (g_pixel_filter + 1) % 4;
+    s_last_valid = 0;
+    SubtitlesHint(names[g_pixel_filter], 2000);
+    LOG_INFO("video", "pixel_filter=%d", g_pixel_filter);
+    ConfigSave();
+}
 
 /* Defined in src/config.c — available for all targets. */
 extern char g_aspect_mode[16];
@@ -193,6 +319,8 @@ static void switch_apply_smoothing(void)
     if (on == s_switch_smooth || !s_tex) return;
     if (SDL_SetTextureScaleMode(s_tex, on ? SDL_ScaleModeLinear
                                           : SDL_ScaleModeNearest) == 0) {
+        if (s_tex2x) SDL_SetTextureScaleMode(s_tex2x, on ? SDL_ScaleModeLinear
+                                                         : SDL_ScaleModeNearest);
         s_switch_smooth = on;
         LOG_INFO("platform", "smoothing %s", on ? "on" : "off");
     } else {
@@ -241,13 +369,17 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
         SDL_UpdateTexture(s_tex, NULL, s_pixels32, w * ARGB_BYTES_PER_PIXEL);
     }
 
+    SDL_Texture *tex = pf_texture(shadow, pal, w, h);   /* F6 filter */
+    int tk = tex ? 2 : 1;
+    if (!tex) tex = s_tex;
+
     SDL_SetRenderDrawColor(s_ren, 0, 0, 0, 255);
     SDL_RenderClear(s_ren);
 
 #ifdef __ANDROID__
     wacki_overlay_compute_layout(s_ren);
     SDL_Rect gr = wacki_overlay_game_rect();
-    SDL_RenderCopy(s_ren, s_tex, NULL, gr.w > 0 ? &gr : NULL);
+    SDL_RenderCopy(s_ren, tex, NULL, gr.w > 0 ? &gr : NULL);
     wacki_overlay_draw(s_ren);
 #else
     {
@@ -261,18 +393,18 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
             int   sy1  = (int)(r.src_y + r.src_h + 0.999f);
             if (sy1 > h) sy1 = h;
             float frac = r.src_y - (float)sy0;
-            SDL_Rect src  = { 0, sy0, w, sy1 - sy0 };
+            SDL_Rect src  = { 0, sy0 * tk, w * tk, (sy1 - sy0) * tk };
             SDL_Rect clip = { (int)(r.dst_x + 0.5f), (int)(r.dst_y + 0.5f),
                               (int)(r.dst_w + 0.5f), (int)(r.dst_h + 0.5f) };
             SDL_Rect dst  = { clip.x, (int)(r.dst_y - frac * r.scale + 0.5f),
                               clip.w, (int)((sy1 - sy0) * r.scale + 0.5f) };
             SDL_RenderSetClipRect(s_ren, &clip);
-            SDL_RenderCopy(s_ren, s_tex, &src, &dst);
+            SDL_RenderCopy(s_ren, tex, &src, &dst);
             SDL_RenderSetClipRect(s_ren, NULL);
         } else {
             SDL_Rect d;
             fit_43(ow, oh, &d);
-            SDL_RenderCopy(s_ren, s_tex, NULL, &d);
+            SDL_RenderCopy(s_ren, tex, NULL, &d);
         }
     }
 #endif
@@ -281,6 +413,9 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
 
 void plat_video_shutdown(void)
 {
+    pf_stop_threads();
+    if (s_tex2x) { SDL_DestroyTexture(s_tex2x); s_tex2x = NULL; }
+    free(s_rgb); free(s_up); free(s_last); s_rgb = s_up = NULL; s_last = NULL;
     if (s_tex) { SDL_DestroyTexture(s_tex);  s_tex = NULL; }
     if (s_ren) { SDL_DestroyRenderer(s_ren); s_ren = NULL; }
     if (s_win) { SDL_DestroyWindow(s_win);   s_win = NULL; }
@@ -294,6 +429,8 @@ static void apply_smoothing_setting(void)
     if (!s_tex || g_smoothing < 0) return;   /* -1: as --scale-mode set it */
     SDL_SetTextureScaleMode(s_tex, g_smoothing ? SDL_ScaleModeLinear
                                                : SDL_ScaleModeNearest);
+    if (s_tex2x) SDL_SetTextureScaleMode(s_tex2x, g_smoothing ? SDL_ScaleModeLinear
+                                                              : SDL_ScaleModeNearest);
 #endif
 }
 

@@ -24,6 +24,7 @@
 #include "wacki/log.h"
 #include "wacki/platform/input.h"   /* plat_pad_read_extra */
 #include "wacki/api.h"              /* ColorFilterCycle */
+#include "wacki/platform/video.h"   /* plat_video_cycle_pixel_filter */
 #include "sdl_internal.h"           /* platform_pad_* declarations */
 
 #include <SDL.h>
@@ -78,6 +79,11 @@ int platform_pad_handle_event(const SDL_Event *ev)
         }
         return 0;
     case SDL_CONTROLLERBUTTONDOWN:
+        if (ev->cbutton.button == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER && back_held) {
+            plat_video_cycle_pixel_filter();        /* View + RB = pixel filter */
+            s_back_combo = 1;
+            return 1;
+        }
         if (ev->cbutton.button == SDL_CONTROLLER_BUTTON_X && back_held) {
             HintsRequest();
             s_back_combo = 1;

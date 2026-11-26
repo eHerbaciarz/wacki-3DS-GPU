@@ -23,6 +23,7 @@
 #include "wacki.h"
 #include "wacki/log.h"
 #include "wacki/platform/input.h"
+#include "wacki/platform/video.h"
 #include "sdl_internal.h"
 #include <SDL.h>
 
@@ -69,6 +70,12 @@ int platform_pad_handle_event(const SDL_Event *ev)
         /* MINUS + physical Y (west = SDL X) = hint (text/hints.c) */
         if (ev->cbutton.button == SDL_CONTROLLER_BUTTON_X && minus_held) {
             HintsRequest();
+            s_minus_combo = 1;
+            return 1;
+        }
+        /* MINUS + R = pixel-art filter (Scale2x / 2xSaI / xBR) */
+        if (ev->cbutton.button == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER && minus_held) {
+            plat_video_cycle_pixel_filter();
             s_minus_combo = 1;
             return 1;
         }

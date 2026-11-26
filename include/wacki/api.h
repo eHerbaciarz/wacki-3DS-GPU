@@ -287,6 +287,9 @@ void           OptionsToggleSdh(void);              /* captions for the deaf */
 enum { PIXF_SCALE2X = 1, PIXF_SAI2X = 2, PIXF_XBR2X = 3 };
 /* 0x00RRGGBB src w×h → out (2w)×(2h). */
 void           PixelUpscale2x(int kind, const uint32_t *src, int w, int h, uint32_t *out);
+void           PixelUpscale2xPrepare(int kind, const uint32_t *src, int w, int h);
+void           PixelUpscale2xRows(int kind, const uint32_t *src, int w, int h,
+                                  uint32_t *out, int y0, int y1);
 
 /* ---- util/wide_layout.c: panorama with a sliding inventory panel ---- */
 enum { WIDE_OFF = 0, WIDE_CROP = 1, WIDE_BARS = 2 };
