@@ -873,5 +873,60 @@ def main(argv=None):
     a.fn(a)
 
 
+def tryb_dwuklik():
+    """Uruchomiony bez argumentów (dwuklik w Windowsie): sam znajdzie dane
+    gry obok skryptu (albo folder wyżej), rozpakuje je i zapisze listę
+    komnat do komnaty.txt — z pauzą, żeby okno nie znikło."""
+    tu = os.path.dirname(os.path.abspath(__file__))
+    try:
+        dane = None
+        for kand in (tu, os.path.dirname(tu), os.getcwd()):
+            if znajdz_pliki_plytko(kand, (".dta",)):
+                dane = kand
+                break
+        if not dane:
+            print("Nie widzę plików Dane_*.dta obok skryptu ani folder wyżej.")
+            wpis = input("Podaj folder gry (albo Enter, żeby wyjść): ").strip().strip('"')
+            if not wpis:
+                return
+            dane = wpis
+        print("Dane gry: %s" % dane)
+        praca = os.path.join(tu, "napisy_praca")
+        cmd_rozpakuj(argparse.Namespace(dane=dane, praca=praca, dta_extract=None,
+                                        od_nowa=False))
+        wyj = os.path.join(tu, "komnaty.txt")
+        import io
+        bufor = io.StringIO()
+        stary, sys.stdout = sys.stdout, bufor
+        try:
+            cmd_komnaty(argparse.Namespace(dane=dane, praca=praca, rozpakowane=None))
+        finally:
+            sys.stdout = stary
+        with open(wyj, "w", encoding="utf-8") as f:
+            f.write(bufor.getvalue())
+        print(bufor.getvalue())
+        print("Zapisane do: %s  — ten plik odeślij." % wyj)
+    except SystemExit as e:
+        if e.code not in (None, 0):
+            print("Błąd: %s" % e.code)
+    except Exception as e:                       # pokaż, nie zamykaj okna
+        print("Błąd: %r" % (e,))
+    finally:
+        try:
+            input("\nNaciśnij Enter, żeby zamknąć...")
+        except EOFError:
+            pass
+
+
+def znajdz_pliki_plytko(katalog, rozszerzenia):
+    try:
+        return [f for f in os.listdir(katalog) if f.lower().endswith(rozszerzenia)]
+    except OSError:
+        return []
+
+
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) == 1:
+        tryb_dwuklik()
+    else:
+        main()
