@@ -237,8 +237,18 @@ static void paint_menu_cursor(void)
 
 /* Poll ESC / platform-quit. ESC sets the menu-back rc unless the scene
  * opted out via SCENE_FLAG_DISABLE_ESC. */
+uint8_t g_pause_menu_open = 0;   /* set while the F12 / START Pytanie is up */
+
 static int poll_menu_keyboard_quit(SceneDef *scene)
 {
+    /* Issue #18: F12 (or START) pressed again while the pause question
+     * is open used to latch a second request, so the question popped up
+     * again right after "Olej". The second press now closes it instead,
+     * like NIE. */
+    if (g_pause_menu_request) {
+        g_pause_menu_request = 0;
+        if (g_pause_menu_open) return MENU_ESC_RC;
+    }
     if (HasPendingKey()) {
         uint16_t k = WaitForKey();
         if (k == VK_ESCAPE && !(scene->flags & SCENE_FLAG_DISABLE_ESC)) {

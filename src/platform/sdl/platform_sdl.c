@@ -155,7 +155,7 @@ static void handle_keydown(const SDL_Event *ev)
         if (SDL_GetModState() & KMOD_SHIFT) DiagToggle();
         else g_stats_dump_request = 1;
     }
-    if (sym == SDLK_F12 || sym == SDLK_AC_BACK) g_pause_menu_request = 1;
+    if ((sym == SDLK_F12 || sym == SDLK_AC_BACK) && !ev->key.repeat) g_pause_menu_request = 1;
     if (sym == SDLK_F11) plat_video_toggle_fullscreen();
 #ifndef WACKI_PS2
     if (sym == SDLK_F10) platform_video_toggle_aspect_mode();
