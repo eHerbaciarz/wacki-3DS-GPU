@@ -140,6 +140,10 @@ void platform_pad_handle_buttons(void)
         platform_video_cycle_zoom();
     }
 
+    if (select_held && (down & KEY_DDOWN)) {
+        g_stats_dump_request = 1;          /* SELECT+down: log to wacki.log */
+        s_select_combo = 1;
+    }
     if (select_held && (down & KEY_B)) {
         g_swap_actor_request = 1;          /* SELECT+B: switch character */
         s_select_combo = 1;

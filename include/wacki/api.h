@@ -267,6 +267,7 @@ const uint8_t *ColorFilterPalette(const uint8_t *pal);   /* cached */
 void           ColorFilterCycle(void);              /* + saves, shows a hint */
 void           OptionsToggleSubtitles(void);        /* menu/options.c, + hint */
 /* ---- text/hints.c: optional hints (podpowiedzi) ---- */
+void           DiagToggle(void);       /* main.c: diagnostics on/off (Shift+F10) */
 void           HintsInit(void);
 void           HintsUnload(void);
 int            HintsLoadBuffer(const char *utf8, size_t len);

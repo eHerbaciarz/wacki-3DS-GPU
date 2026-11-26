@@ -169,7 +169,12 @@ static void handle_keydown(const SDL_Event *ev)
     if (sym == SDLK_F5)  g_quicksave_request  = 1;
     if (sym == SDLK_F9)  g_quickload_request  = 1;
     /* F10: play statistics on screen (was F3, log only). */
-    if (sym == SDLK_F10) g_stats_dump_request = 1;
+    /* F10: statistics on screen + diagnostic log to wacki.log;
+     * Shift+F10: diagnostics on/off (src/log.c). */
+    if (sym == SDLK_F10) {
+        if (SDL_GetModState() & KMOD_SHIFT) DiagToggle();
+        else g_stats_dump_request = 1;
+    }
     if (sym == SDLK_F12 || sym == SDLK_AC_BACK) g_pause_menu_request = 1;
     if (sym == SDLK_F11) plat_video_toggle_fullscreen();
 #ifndef WACKI_PS2

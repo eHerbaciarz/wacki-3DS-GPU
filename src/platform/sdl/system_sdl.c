@@ -29,8 +29,14 @@
 static void redirect_streams_to_logfile_if_no_console(void)
 {
     if (GetConsoleWindow()) return;
+    remove("wacki.old.log");
+    rename("wacki.log", "wacki.old.log");
     FILE *f = freopen("wacki.log", "w", stderr);
-    if (f) { setvbuf(stderr, NULL, _IOLBF, 0); freopen("wacki.log", "a", stdout); }
+    if (f) {
+        setvbuf(stderr, NULL, _IOLBF, 0);
+        freopen("wacki.log", "a", stdout);
+        g_log_stderr_is_file = 1;            /* src/log.c writes here */
+    }
 }
 #endif
 

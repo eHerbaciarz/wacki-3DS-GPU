@@ -33,6 +33,7 @@ extern int  g_subtitles_speakers;
 extern int  g_subtitles_sounds;
 extern int  g_hints_on, g_hint_wait;
 extern int  g_modern_controls;
+int         g_cfg_diag = 0;          /* wacki.cfg diagnostyka= (Shift+F10) */
 int         g_pixel_filter = 0;      /* F6 pixel-art filter (SDL backends) */
 int         g_zoom_filter = -1;     /* 3DS bottom-screen zoom; -1 = default */
 int         g_smoothing   = -1;     /* PC smoothing: -1 = --scale-mode / default */
@@ -92,6 +93,8 @@ void ConfigLoad(void)
             g_subtitles_speakers = v < 0 ? -1 : (v ? 1 : 0);
         else if (sscanf(line,"subtitles_sounds=%d",&v)==1)
             g_subtitles_sounds = v < 0 ? -1 : (v ? 1 : 0);
+        else if (sscanf(line,"diagnostyka=%d",&v)==1)
+            { g_cfg_diag = v ? 1 : 0; if (g_cfg_diag) g_log_diag = 1; }
         else if (sscanf(line,"modern_controls=%d",&v)==1)
             g_modern_controls = v ? 1 : 0;
         else if (sscanf(line,"pixel_filter=%d",&v)==1)
@@ -130,6 +133,8 @@ void ConfigSave(void)
     fprintf(fp,"# imiona mowcow / opisy dzwiekow: 1 tak, 0 nie, -1 jak w pliku napisow\n");
     fprintf(fp,"subtitles_speakers=%d\n", g_subtitles_speakers);
     fprintf(fp,"subtitles_sounds=%d\n",   g_subtitles_sounds);
+    fprintf(fp,"# diagnostyka: 1 = dziennik kazdego klikniecia i kroku skryptu (zapis do wacki.log: F10, awaria, wyjscie)\n");
+    fprintf(fp,"diagnostyka=%d\n", g_cfg_diag);
     fprintf(fp,"# sterowanie wspolczesne (ikona myszy w Opcjach): PPM = panel w panoramie, Tab/kolko = postac\n");
     fprintf(fp,"modern_controls=%d\n", g_modern_controls);
     fprintf(fp,"# filtr pikseli (F6, PC/Switch): 0 brak, 1 Scale2x, 2 2xSaI, 3 xBR\n");
