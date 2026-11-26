@@ -61,8 +61,8 @@ ta wersja ich nie zawiera. Folder `podpowiedzi` (i ewentualnie
 | 🎮 **3DS** (najlepiej New 3DS) | `.3dsx` (Homebrew Launcher) albo `.cia` | `sdmc:/3ds/wacki/` |
 | 🎮 **PS Vita** | `.vpk` (VitaShell) | `ux0:/data/wacki/` |
 | 🎮 **Switch** | `.nro` (Homebrew Menu) | `sdmc:/switch/wacki/` |
-| 🪟 **Windows** 10/11 | `wacki-pc-*.exe` — połóż **obok** oryginalnego `WACKI.EXE`, nie zmieniaj nazwy na `wacki.exe` | folder gry |
-| 🐧 **Steam Deck / Linux** | `wacki-linux-steamdeck-*.tar.gz` (albo `.exe` przez Protona) | folder gry |
+| 🪟 **Windows** 10/11 | `wacki-plus.exe` (Plus) albo `wacki.exe` (podstawowe) — **nie wrzucaj `wacki.exe` do folderu z oryginalnym `WACKI.EXE`**, bo Windows nie rozróżnia wielkości liter i go nadpisze. Pliki gry włóż do podfolderu `data` obok programu | folder z programem + `data/` |
+| 🐧 **Steam Deck / Linux** | `wacki-plus-linux.tar.gz` / `wacki-linux.tar.gz` (albo `.exe` przez Protona) | folder gry |
 
 ### Najważniejsze przyciski
 
