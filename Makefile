@@ -45,7 +45,9 @@ CFLAGS   ?= -O2 -Wall -Wextra -Wpedantic \
 # Version string baked into the startup banner. Defaults to git describe so dev
 # builds carry "<last-tag>-<n>-g<sha>[-dirty]" (users paste it into bug reports);
 # falls back to "unknown" outside a git checkout (extracted release tarball).
-WACKI_VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo unknown)
+# VERSION holds the number shown on the title screen ("1.3 Plus");
+# without it the git description is used.
+WACKI_VERSION ?= $(shell cat VERSION 2>/dev/null || git describe --tags --always --dirty 2>/dev/null || echo unknown)
 CFLAGS        += -DWACKI_VERSION='"$(WACKI_VERSION)"'
 
 # All built binaries land in $(DIST) — gitignored, so artefacts never sit at the

@@ -98,7 +98,7 @@ jobs:
       # passing it via $GITHUB_ENV fixes Windows and keeps every platform
       # consistent: the Makefile's `WACKI_VERSION ?=` honours the env.
       - name: Resolve build version
-        run: echo "WACKI_VERSION=$(git describe --tags --always --dirty)" >> "$GITHUB_ENV"
+        run: echo "WACKI_VERSION=$(cat VERSION 2>/dev/null || git describe --tags --always --dirty)" >> "$GITHUB_ENV"
 
       # ---- Linux: install SDL2's build-time deps so the static SDL2 can
       #   embed its dlopen stubs against system libs (libasound,

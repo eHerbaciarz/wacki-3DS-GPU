@@ -11,7 +11,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-WACKI_VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
+WACKI_VERSION=$(cat VERSION 2>/dev/null || git describe --tags --always --dirty 2>/dev/null || echo "dev")
 
 # Wspólne dla obu dróg: czyste SDL2 + make. $1.. = argumenty make.
 read -r -d '' INNER <<'SH' || true
