@@ -20,3 +20,9 @@ CFLAGS += -DWACKI_HANDHELD -DWACKI_PS2
 ENGINE_SRCS += src/platform/sdl/gamepad_sdl.c \
                src/platform/ps2/system_ps2.c src/platform/ps2/storage_ps2.c \
                src/platform/ps2/audio_ps2.c  src/platform/ps2/video_ps2.c
+
+# Without data/WACKI.EXE at build time the ELF carries no game data and reads
+# WACKI.EXE from the data folder at start (system_ps2.c plat_apply_video_prefs).
+ifeq ($(wildcard data/WACKI.EXE),)
+    EMBEDDED_PE_SRC := src/platform/sdl/embedded_wacki_pe_stub.c
+endif
