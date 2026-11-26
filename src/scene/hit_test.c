@@ -22,6 +22,7 @@
 
 #include "wacki.h"
 
+#include <stddef.h>
 #include <stdint.h>
 
 extern Entity *g_click_list_head;
@@ -55,11 +56,45 @@ extern Entity *EntityListAt   (int click_list, int idx);
 
 /* ---- helpers ------------------------------------------------------- */
 
+extern int AnimFrameRleSrcLen(const AnimAsset *a, const uint8_t *px);
+
+/* Pixel number `index` of an RLE frame (same stream as DepackRleFrame),
+ * found by walking the runs instead of unpacking the whole frame.
+ * Returns the fill colour (transparent) if the stream ends first. */
+static uint8_t rle_pixel_at(const uint8_t *src, int src_len, size_t index)
+{
+    if (!src || src_len < 3) return 0;
+    const uint8_t *end = src + src_len;
+    uint8_t fill = src[0], mark_a = src[1], mark_b = src[2];
+    const uint8_t *p = src + 3;
+    size_t pos = 0;
+    while (p < end) {
+        uint8_t b = *p++;
+        size_t  count;
+        uint8_t v;
+        if (b == mark_a) {
+            if (p >= end) break;
+            count = (size_t)*p++ + 1;
+            v = fill;
+        } else if (b == mark_b) {
+            if (p + 1 >= end) break;
+            count = (size_t)*p++ + 1;
+            v = *p++;
+        } else {
+            count = 1;
+            v = b;
+        }
+        if (index < pos + count) return v;
+        pos += count;
+    }
+    return fill;
+}
+
 /* Pixel test for a kind=1 click descriptor: 8bpp pixel at (mx, my) on
  * the owner's atlas frame. Caller has already done the bbox check.
  * Also returns the current frame so the verb-table lookup can use it. */
 static int pixel_hit_sprite(Entity *owner, int16_t mouse_x, int16_t mouse_y,
-                            int16_t ox, int16_t oy, uint16_t ow,
+                            int16_t ox, int16_t oy, uint16_t ow, uint16_t oh,
                             uint16_t *out_frame)
 {
     *out_frame = 0;
@@ -76,7 +111,34 @@ static int pixel_hit_sprite(Entity *owner, int16_t mouse_x, int16_t mouse_y,
 
     int lx = mouse_x - ox;
     int ly = mouse_y - oy;
-    return px[ly * (int)ow + lx] != 0;
+
+    /* The entity's width/height were baked by the last VM step (and
+     * doubled for 2x sprites), but the frame may have changed since or
+     * be drawn scaled. Map into the frame's own pixel grid and refuse
+     * anything outside it — reading past the frame (seen on the flower
+     * in front of the Africa mine) walks off the end of the asset. */
+    int fw = atlas->off_widths  ? atlas->off_widths [cur_frame] : (int)ow;
+    int fh = atlas->off_heights ? atlas->off_heights[cur_frame] : (int)oh;
+    if (fw <= 0 || fh <= 0 || ow == 0 || oh == 0) return 0;
+    if (fw != (int)ow) lx = lx * fw / (int)ow;
+    if (fh != (int)oh) ly = ly * fh / (int)oh;
+    if (lx < 0 || ly < 0 || lx >= fw || ly >= fh) return 0;
+
+    size_t at = (size_t)ly * (size_t)fw + (size_t)lx;
+
+    /* kind=3 frames are RLE streams (see DepackRleFrame), not a pixel
+     * grid: indexing them directly tested a random compressed byte —
+     * and, for a small packed frame like the flower in front of the
+     * Africa mine (45x47 px in 811 bytes), read past the asset. */
+    if (atlas->kind == 3)
+        return rle_pixel_at(px, AnimFrameRleSrcLen(atlas, px), at) != 0;
+
+    if (atlas->raw_buffer && atlas->raw_size) {
+        const uint8_t *lo = (const uint8_t *)atlas->raw_buffer;
+        const uint8_t *hi = lo + atlas->raw_size;
+        if (px >= lo && px < hi && at >= (size_t)(hi - px)) return 0;
+    }
+    return px[at] != 0;
 }
 
 /* Pixel test for a kind=2 mask click descriptor. The mask flag at
@@ -240,7 +302,7 @@ int ClickHitTest(int16_t mouse_x, int16_t mouse_y, uint16_t *out_verb)
         int      hit       = 0;
         uint16_t cur_frame = 0;
         if (kind == CLICK_KIND_SPRITE) {
-            hit = pixel_hit_sprite(owner, mouse_x, mouse_y, ox, oy, ow,
+            hit = pixel_hit_sprite(owner, mouse_x, mouse_y, ox, oy, ow, oh,
                                    &cur_frame);
         } else {
             hit = pixel_hit_mask(owner, mouse_x, mouse_y, ox, oy, ow);
