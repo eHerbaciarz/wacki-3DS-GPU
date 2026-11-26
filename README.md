@@ -4,6 +4,11 @@
 [![Platformy](https://img.shields.io/badge/platformy-3DS%20%C2%B7%20Vita%20%C2%B7%20Switch%20%C2%B7%20Windows%20%C2%B7%20Steam%20Deck-1f6feb?style=flat-square)](../../releases)
 [![Licencja](https://img.shields.io/badge/licencja-GPL--3.0-blue?style=flat-square)](LICENSE)
 
+> **Dwa wydania.** `main` to **Wacki Plus** — gra z ulepszeniami opisanymi
+> niżej. Gałąź [`wacki`](../../tree/wacki) to **wydanie podstawowe**: gra
+> jak w oryginale, tylko z poprawkami błędów i szybszym obrazem (GPU) na 3DS,
+> Vicie i Switchu. Poprawki trafiają do obu.
+
 Port polskiej przygodówki **Wacki: Kosmiczna rozgrywka** (1998) na konsole
 przenośne i PC — rozwijany przez **Herbaciarza** na bazie portu
 [**mszula/wacki**](https://github.com/mszula/wacki) (silnik odtworzony
