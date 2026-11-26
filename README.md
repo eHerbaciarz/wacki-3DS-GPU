@@ -1,5 +1,17 @@
 # Wacki: Kosmiczna rozgrywka
 
+> **Gałąź `wacki` — wydanie podstawowe (fork eHerbaciarz).** Gra jak
+> w oryginale, tylko z poprawkami błędów i szybszym obrazem na 3DS, Vicie
+> i Switchu (GPU). Bez dodatków. Wersja z ulepszeniami (panorama, napisy,
+> podpowiedzi, sterowanie współczesne, filtry) to **Wacki Plus** w gałęzi
+> `main`.
+>
+> Poprawki względem oryginału: dziewczynka w piaskownicy śmieje się bez
+> końca (mszula/wacki#14), błąd pamięci przy klikaniu w postacie
+> i przedmioty, m.in. kwiatek w Afryce (#17), podwójne okno po F12 (#18).
+> Dziennik błędów `wacki.log` (`F3`, diagnostyka `Shift+F3`), opis
+> w [docs/dziennik.md](docs/dziennik.md).
+
 [![Latest release](https://img.shields.io/github/v/release/mszula/wacki?sort=semver&style=flat-square&label=release&color=6f42c1)](../../releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/mszula/wacki/total?style=flat-square&label=downloads&color=44cc11&logo=github&logoColor=white)](../../releases)
 [![Platforms](https://img.shields.io/badge/platforms-macOS%20%C2%B7%20Linux%20%C2%B7%20Windows%20%C2%B7%20Android%20%C2%B7%20Miyoo%20%C2%B7%20PortMaster%20%C2%B7%20PS2-1f6feb?style=flat-square)](../../releases)
