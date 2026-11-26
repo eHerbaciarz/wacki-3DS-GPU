@@ -21,6 +21,7 @@
 
 extern int  g_scale_factor;
 extern int  g_fullscreen;
+int         g_cfg_diag = 0;          /* wacki.cfg diagnostyka= (Shift+F3) */
 
 /* Zdefiniowane tutaj — dostępne dla wszystkich targetów. */
 char g_aspect_mode[16] = "stretch";
@@ -65,6 +66,8 @@ void ConfigLoad(void)
             g_scale_factor = v;
         else if (sscanf(line,"aspect_mode=%15s",sv)==1) normalize_aspect(sv);
         else if (sscanf(line,"touch_mode=%15s",sv)==1)  normalize_touch(sv);
+        else if (sscanf(line,"diagnostyka=%d",&v)==1)
+            { g_cfg_diag = v ? 1 : 0; if (g_cfg_diag) g_log_diag = 1; }
     }
     fclose(fp);
     LOG_INFO("config","loaded: fullscreen=%d scale=%d aspect=%s touch=%s",
@@ -82,6 +85,8 @@ void ConfigSave(void)
     fprintf(fp,"aspect_mode=%s\n", g_aspect_mode[0]?g_aspect_mode:"stretch");
     fprintf(fp,"# touch_mode: absolute | relative | off\n");
     fprintf(fp,"touch_mode=%s\n",  g_touch_mode[0]?g_touch_mode:"absolute");
+    fprintf(fp,"# diagnostyka: 1 = dziennik kazdego klikniecia i kroku skryptu (zapis do wacki.log: F3, awaria, wyjscie)\n");
+    fprintf(fp,"diagnostyka=%d\n", g_cfg_diag);
     fclose(fp);
     LOG_INFO("config","saved: fullscreen=%d scale=%d aspect=%s touch=%s",
              g_fullscreen,g_scale_factor?g_scale_factor:1,g_aspect_mode,g_touch_mode);

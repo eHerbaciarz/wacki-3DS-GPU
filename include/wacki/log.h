@@ -55,19 +55,24 @@ void wacki_log(WackiLogLevel lvl, const char *tag, const char *fmt, ...)
 #define LOG_WARN(tag,  ...)  wacki_log(WL_WARN,  (tag), __VA_ARGS__)
 #define LOG_ERROR(tag, ...)  wacki_log(WL_ERROR, (tag), __VA_ARGS__)
 
+/* Diagnostics (src/log.c): wacki.log + RAM ring of the last lines. */
+#include <stdint.h>
+extern int        g_log_diag;            /* 1 = keep TRACE/DEBUG in the ring */
+extern uint32_t (*g_log_clock)(void);    /* ms timestamps (SDL_GetTicks)     */
+extern int        g_log_stderr_is_file;  /* Win32 GUI: stderr is wacki.log   */
+void LogOpenFile(const char *path, const char *header);
+void LogDumpRing(const char *reason);    /* ring → wacki.log                 */
+
 #ifdef WACKI_VERBOSE
 #  define LOG_TRACE(tag, ...) wacki_log(WL_TRACE, (tag), __VA_ARGS__)
 #  define LOG_DEBUG(tag, ...) wacki_log(WL_DEBUG, (tag), __VA_ARGS__)
 #else
-   /* Release: the `if (0) ...` block is dead code the optimizer
-    * drops, but the compiler still sees the args as USED (silences
-    * -Wunused-but-set-variable on logger-only counters) and still
-    * type-checks the format string via the printf-attribute on
-    * wacki_log. Zero runtime cost in -O2. */
+   /* Release: compiled in, but only formatted when diagnostics are on
+    * (g_log_diag) — one well-predicted branch otherwise. */
 #  define LOG_TRACE(tag, ...) \
-       do { if (0) wacki_log(WL_TRACE, (tag), __VA_ARGS__); } while (0)
+       do { if (g_log_diag) wacki_log(WL_TRACE, (tag), __VA_ARGS__); } while (0)
 #  define LOG_DEBUG(tag, ...) \
-       do { if (0) wacki_log(WL_DEBUG, (tag), __VA_ARGS__); } while (0)
+       do { if (g_log_diag) wacki_log(WL_DEBUG, (tag), __VA_ARGS__); } while (0)
 #endif
 
 #endif /* WACKI_LOG_H */

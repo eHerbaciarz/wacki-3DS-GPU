@@ -233,6 +233,7 @@ uint32_t AlphaTintForListener(int16_t lx, int16_t ly);
  * effect. Non-zero = effect on. The 3DS GPU backend (video_3ds_c3d.c)
  * also reads it every frame as "smoothing on" (linear filtering). */
 int      GraphicsAlphaFxEnabled(void);
+void     DiagToggle(void);       /* main.c: diagnostics on/off (Shift+F3) */
 
 /* ---- archive.c / depack.c ---------------------------------------- */
 

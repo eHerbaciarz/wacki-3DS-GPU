@@ -105,6 +105,18 @@ const char *g_scale_mode = "nearest";
  * always full-screen since there's no windowing system). */
 int g_fullscreen = 0;
 
+/* ---- diagnostics on/off (Shift+F3, pad combo) ------------------- */
+
+void DiagToggle(void)
+{
+    extern int  g_cfg_diag;
+    extern void ConfigSave(void);
+    g_cfg_diag = !g_cfg_diag;
+    g_log_diag = g_cfg_diag;
+    LOG_INFO("log", "diagnostyka=%d", g_cfg_diag);
+    ConfigSave();
+}
+
 /* ---- stats dump (F3) -------------------------------------------- */
 
 void StatsDump(void)
@@ -115,6 +127,7 @@ void StatsDump(void)
     LOG_INFO("stats", "elapsed=%02u:%02u clicks=%u dialogs=%u komnata-loads=%u "
                       "quicksave=%u quickload=%u",
              secs / 60, secs % 60, g_stats.total_clicks, g_stats.total_dialogs, g_stats.total_komnata_loads, g_stats.total_quicksaves, g_stats.total_quickloads);
+    LogDumpRing("F3");
 }
 
 /* ---- data-root discovery ---------------------------------------- *
@@ -132,6 +145,18 @@ void StatsDump(void)
  * (flushes save, releases SDL, etc.). Without this, Ctrl-C in
  * headless CI runs terminated abruptly mid-frame and left Wacki.sav.
  * tmp dangling. */
+/* Crash: write the diagnostic ring to wacki.log first (src/log.c). */
+static void crash_handler(int sig)
+{
+    char why[48];
+    snprintf(why, sizeof why, "awaria, sygna\xC5\x82 %d", sig);
+    LogDumpRing(why);
+    signal(sig, SIG_DFL);
+    raise(sig);
+}
+
+static uint32_t log_clock(void) { return SDL_GetTicks(); }
+
 static void sigint_handler(int sig)
 {
     (void)sig;
@@ -248,6 +273,12 @@ static void parse_cli_args(int argc, char **argv, CliArgs *out)
             g_log_min_level   = WL_TRACE;
             out->log_level_set = 1;
         }
+        /* --diag: diagnostic log (every click / script step kept in RAM,
+         * written to wacki.log on F3, on a crash and at exit). */
+        else if (strcmp(argv[i], "--diag") == 0)
+        {
+            g_log_diag = 1;
+        }
         else if (strcmp(argv[i], "-q") == 0 ||
                  strcmp(argv[i], "--quiet") == 0)
         {
@@ -307,6 +338,8 @@ static void apply_env_overrides(CliArgs *args)
         int lvl = parse_log_level_name(getenv("WACKI_LOG_LEVEL"));
         if (lvl >= 0)
             g_log_min_level = (WackiLogLevel)lvl;
+        if (lvl >= 0 && lvl <= WL_DEBUG)
+            g_log_diag = 1;                  /* trace/debug: keep them */
     }
 }
 
@@ -403,6 +436,45 @@ int WackiMain(int argc, char **argv)
     /* SIGINT first so it covers init failures too. */
     signal(SIGINT, sigint_handler);
 
+    /* wacki.log next to wacki.cfg (the cwd is set by the early init). */
+    g_log_clock = log_clock;
+    {
+#ifndef WACKI_VERSION
+#define WACKI_VERSION "unknown"
+#endif
+#if defined(__3DS__) || defined(_3DS)
+        const char *plat = "3DS";
+#elif defined(__vita__)
+        const char *plat = "PS Vita";
+#elif defined(WACKI_SWITCH) || defined(__SWITCH__)
+        const char *plat = "Switch";
+#elif defined(WACKI_PS2)
+        const char *plat = "PS2";
+#elif defined(__ANDROID__)
+        const char *plat = "Android";
+#elif defined(_WIN32)
+        const char *plat = "Windows";
+#elif defined(__APPLE__)
+        const char *plat = "macOS";
+#else
+        const char *plat = "Linux";
+#endif
+        char head[200];
+#ifdef SDL_MAJOR_VERSION
+        snprintf(head, sizeof head, "Wacki %s (build %s %s), %s, SDL %d.%d.%d",
+                 WACKI_VERSION, __DATE__, __TIME__, plat,
+                 SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
+#else
+        snprintf(head, sizeof head, "Wacki %s (build %s %s), %s",
+                 WACKI_VERSION, __DATE__, __TIME__, plat);
+#endif
+        LogOpenFile("wacki.log", head);
+    }
+    signal(SIGSEGV, crash_handler);
+    signal(SIGABRT, crash_handler);
+    signal(SIGFPE,  crash_handler);
+    signal(SIGILL,  crash_handler);
+
     /* Load persisted display prefs FIRST so they form the baseline;
      * the CLI parser + env overrides below then layer on top (an
      * explicit --scale / --fullscreen always wins over wacki.cfg).
@@ -479,6 +551,7 @@ int WackiMain(int argc, char **argv)
 
     plat_trace_mark(0x6000u);                 /* entering the main game loop */
     RunMainGameLoop();
+    if (g_log_diag) LogDumpRing("koniec gry");
     PlatformShutdown();
     return 0;
 }
