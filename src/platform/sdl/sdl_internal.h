@@ -22,6 +22,8 @@ void platform_video_get_present_state(int *stretch_active,
                                       int *fb_w,  int *fb_h);
 /* window (mouse) coords -> game 640x480, any aspect mode */
 void platform_video_window_to_game(int wx, int wy, int *gx, int *gy);
+/* game 640x480 -> window (mouse) coords; 0 when not in the panorama */
+int  platform_video_game_to_window(int gx, int gy, int *wx, int *wy);
 
 /* platform_sdl.c — touch mode cycle (absolute / relative / off).
  * g_touch_mode is defined in src/config.c (available for all targets). */

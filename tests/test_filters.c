@@ -222,6 +222,60 @@ TEST(wide_layout_3ds_top_screen)
     wide_reset();
 }
 
+TEST(wide_layout_modern_popup)
+{
+    extern int g_modern_controls;
+    extern int16_t g_mouse_x;
+    extern uint16_t g_held_item;
+    WideRect r;
+    int gx, gy;
+    wide_reset();
+    g_modern_controls = 1;
+    WideLayoutSetScreen(1280, 720);
+    wide_frame("wide", 450, 1);                 /* cursor low: no sliding  */
+    ASSERT_TRUE(WideLayoutGet(1280, 720, &r));
+    ASSERT_TRUE(r.band_l < 400.1f);
+    ASSERT_FALSE(r.popup);
+    WideLayoutScreenToGame(1280, 720, 100.0f, 719.0f, &gx, &gy);
+    ASSERT_TRUE(gy <= 399);                     /* panel strip unreachable */
+
+    g_mouse_x = 100; g_mouse_y = 200; g_held_item = 0;
+    WideLayoutTogglePopup();                    /* right button             */
+    ASSERT_TRUE(WideLayoutPopupOpen());
+    ASSERT_EQ(g_mouse_x, 320);                  /* cursor moved into it     */
+    ASSERT_TRUE(g_mouse_y >= 400);
+    wide_frame("wide", g_mouse_y, 1);
+    ASSERT_TRUE(WideLayoutGet(1280, 720, &r));
+    ASSERT_TRUE(r.popup);
+    ASSERT_TRUE(r.p_scale > 1.59f && r.p_scale < 1.61f);   /* 2 x 0.8 */
+    ASSERT_TRUE(r.p_x > 127.9f && r.p_x < 128.1f);         /* centred */
+    /* the middle of the pop-up is the middle of the panel */
+    ASSERT_TRUE(WideLayoutScreenToGame(1280, 720, 640.0f, 360.0f, &gx, &gy));
+    ASSERT_EQ(gx, 320);
+    ASSERT_TRUE(gy >= 435 && gy <= 445);
+    float sx, sy;
+    ASSERT_TRUE(WideLayoutGameToScreen(1280, 720, gx, gy, &sx, &sy));
+    ASSERT_TRUE(sx > 638.0f && sx < 643.0f && sy > 356.0f && sy < 364.0f);
+
+    /* picking an item up closes it, back to where the cursor was */
+    g_held_item = 5;
+    wide_frame("wide", g_mouse_y, 1);
+    ASSERT_FALSE(WideLayoutPopupOpen());
+    ASSERT_EQ(g_mouse_x, 100);
+    ASSERT_EQ(g_mouse_y, 200);
+    g_held_item = 0;
+
+    /* a click beside it closes it and is swallowed */
+    WideLayoutTogglePopup();
+    g_mouse_y = 100;
+    ASSERT_TRUE(WideLayoutPopupClickOutside());
+    ASSERT_FALSE(WideLayoutPopupOpen());
+    ASSERT_FALSE(WideLayoutPopupClickOutside());
+
+    g_modern_controls = 0;
+    wide_reset();
+}
+
 SUITE(filters)
 {
     RUN_TEST(color_filter_modes);
@@ -232,4 +286,5 @@ SUITE(filters)
     RUN_TEST(wide_layout_bars_panel_and_off);
     RUN_TEST(wide_layout_3ds_top_screen);
     RUN_TEST(wide_layout_16_10_steam_deck);
+    RUN_TEST(wide_layout_modern_popup);
 }

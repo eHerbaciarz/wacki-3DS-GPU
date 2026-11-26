@@ -69,6 +69,11 @@ ta wersja ich nie zawiera. Folder `podpowiedzi` (i ewentualnie
 
 Na padzie na PC i Steam Decku: Y = obraz, View = kolory, View + X = podpowiedź, View + RB = filtr pikseli.
 
+**Sterowanie współczesne** (ikona myszy w Opcjach, domyślnie wyłączone):
+w panoramie prawy przycisk pokazuje panel z przedmiotami na środku ekranu,
+a postać zmieniasz `Tab` / kółkiem (pad: View/−/SELECT + B). Szczegóły:
+[docs/panorama.md](docs/panorama.md).
+
 ---
 
 Poniżej oryginalny opis portu **mszula/wacki** (platformy: macOS,

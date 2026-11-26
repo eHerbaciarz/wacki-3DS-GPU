@@ -98,6 +98,7 @@ extern WackiStats    g_stats;
 
 extern uint8_t   g_lmb_clicked;
 extern uint8_t   g_rmb_clicked;
+extern uint8_t  g_swap_actor_request;   /* Tab/wheel/combo: switch character */
 extern uint8_t   g_lmb_handled;
 extern uint16_t  g_key_state;
 /* T53 — F5 / F9 latches. PlatformPumpEvents sets these on F5/F9

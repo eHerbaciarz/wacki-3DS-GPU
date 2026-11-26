@@ -230,6 +230,18 @@ void platform_video_window_to_game(int wx, int wy, int *gx, int *gy)
     *gx = x; *gy = y;
 }
 
+int platform_video_game_to_window(int gx, int gy, int *wx, int *wy)
+{
+    int ow, oh, ww = 0, wh = 0;
+    float sx, sy;
+    output_size(&ow, &oh);
+    if (!WideLayoutGameToScreen(ow, oh, gx, gy, &sx, &sy)) return 0;
+    if (s_win) SDL_GetWindowSize(s_win, &ww, &wh);
+    *wx = (ww > 0 && ow > 0) ? (int)(sx * ww / ow) : (int)sx;
+    *wy = (wh > 0 && oh > 0) ? (int)(sy * wh / oh) : (int)sy;
+    return 1;
+}
+
 void platform_video_toggle_aspect_mode(void)
 {
     WideAspectCycle();              /* wide -> wide-bars -> 4:3, saved */
@@ -334,6 +346,27 @@ static void switch_apply_smoothing(void)
 }
 #endif
 
+/* "Sterowanie współczesne": the panel (frame rows 400..479) in a frame in
+ * the middle of the screen, the scene dimmed behind it. */
+static void draw_popup(const WideRect *r, SDL_Texture *tex, int tk, int w, int h)
+{
+    int b = (int)(r->p_border + 0.5f);
+    SDL_Rect pr = { (int)(r->p_x + 0.5f), (int)(r->p_y + 0.5f),
+                    (int)(r->p_w + 0.5f), (int)(r->p_h + 0.5f) };
+    SDL_SetRenderDrawBlendMode(s_ren, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(s_ren, 0, 0, 0, 90);
+    SDL_RenderFillRect(s_ren, NULL);                          /* dim */
+    SDL_SetRenderDrawBlendMode(s_ren, SDL_BLENDMODE_NONE);
+    SDL_Rect outer = { pr.x - 2 * b, pr.y - 2 * b, pr.w + 4 * b, pr.h + 4 * b };
+    SDL_Rect inner = { pr.x - b, pr.y - b, pr.w + 2 * b, pr.h + 2 * b };
+    SDL_SetRenderDrawColor(s_ren, 10, 10, 14, 255);
+    SDL_RenderFillRect(s_ren, &outer);
+    SDL_SetRenderDrawColor(s_ren, 222, 200, 120, 255);       /* gold rim */
+    SDL_RenderFillRect(s_ren, &inner);
+    SDL_Rect src = { 0, 400 * tk, w * tk, (h - 400) * tk };
+    SDL_RenderCopy(s_ren, tex, &src, &pr);
+}
+
 void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
 {
     if (!s_tex || !shadow || !pal) return;
@@ -401,6 +434,7 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
             SDL_RenderSetClipRect(s_ren, &clip);
             SDL_RenderCopy(s_ren, tex, &src, &dst);
             SDL_RenderSetClipRect(s_ren, NULL);
+            if (r.popup) draw_popup(&r, tex, tk, w, h);
         } else {
             SDL_Rect d;
             fit_43(ow, oh, &d);

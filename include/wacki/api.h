@@ -299,6 +299,9 @@ typedef struct {
     float band_l;                     /* rows 0..band_l reachable now    */
     float src_x, src_y, src_w, src_h; /* part of the 640x480 frame shown */
     float dst_x, dst_y, dst_w, dst_h; /* where, in screen pixels         */
+    int   popup;                      /* modern controls: panel pop-up   */
+    float p_scale, p_x, p_y, p_w, p_h; /* frame rows 400..479 drawn here  */
+    float p_border;                   /* frame around it, screen px      */
 } WideRect;
 int  WideAspectMode(void);            /* WIDE_OFF / WIDE_CROP / WIDE_BARS */
 void WideAspectCycle(void);           /* wide -> wide-bars -> 4:3, + hint */
@@ -312,6 +315,14 @@ int  WideLayoutGet(int scr_w, int scr_h, WideRect *r);
 int  WideLayoutScreenToGame(int scr_w, int scr_h, float sx, float sy,
                             int *gx, int *gy);
 int  WideLayoutBand(int *top, int *bottom); /* visible scene rows        */
+int  WideLayoutGameToScreen(int scr_w, int scr_h, int gx, int gy, float *sx, float *sy);
+/* "Sterowanie współczesne" (g_modern_controls): right button = panel pop-up */
+int  WideLayoutPopupOpen(void);
+void WideLayoutTogglePopup(void);
+int  WideLayoutPopupClickOutside(void);  /* 1 = click swallowed (closed) */
+extern void (*g_pointer_warp_hook)(int gx, int gy);
+extern int  g_modern_controls;         /* wacki.cfg modern_controls=0|1 */
+void ModernControlsToggle(void);       /* Options icon, + hint, saved */
 
 /* ---- archive.c / depack.c ---------------------------------------- */
 

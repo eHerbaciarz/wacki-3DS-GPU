@@ -83,8 +83,29 @@ void PlatformSetTextInput(int on)
 
 /* ---- init / shutdown -------------------------------------------------- */
 
+#ifndef __ANDROID__
+static int s_ptr_valid = 0, s_ptr_wx, s_ptr_wy, s_ptr_gx, s_ptr_gy;
+#endif
+
+#ifndef __ANDROID__
+/* util/wide_layout.c moved the cursor (panel pop-up): move the OS mouse
+ * pointer with it, so the next mouse motion doesn't jump back. */
+static void warp_pointer(int gx, int gy)
+{
+    int wx, wy;
+    if (g_headless || !platform_video_game_to_window(gx, gy, &wx, &wy)) return;
+    SDL_Window *w = SDL_GetMouseFocus();
+    if (!w) return;
+    SDL_WarpMouseInWindow(w, wx, wy);
+    s_ptr_wx = wx; s_ptr_wy = wy; s_ptr_gx = gx; s_ptr_gy = gy;
+}
+#endif
+
 int PlatformInit(int w, int h, const char *title)
 {
+#ifndef __ANDROID__
+    g_pointer_warp_hook = warp_pointer;
+#endif
 #ifdef SDL_HINT_APP_NAME
     SDL_SetHint(SDL_HINT_APP_NAME, "Wacki");
 #endif
@@ -166,7 +187,7 @@ static void handle_keydown(const SDL_Event *ev)
     /* H: hints (off by default — the bulb in Options), not while typing */
     if (sym == SDLK_h && !s_typing) HintsRequest();
 #endif
-    if (sym == SDLK_TAB) g_rmb_clicked = 1;
+    if (sym == SDLK_TAB) g_swap_actor_request = 1;   /* switch character */
     if (sym == SDLK_BACKSPACE) PlatformPushTypedChar(ASCII_BACKSPACE);
     if (sym == SDLK_RETURN || sym == SDLK_KP_ENTER) PlatformPushTypedChar(ASCII_ENTER);
     plat_handle_platform_key((int)sym);
@@ -182,9 +203,6 @@ static void handle_textinput(const SDL_Event *ev)
     }
 }
 
-#ifndef __ANDROID__
-static int s_ptr_valid = 0, s_ptr_wx, s_ptr_wy, s_ptr_gx, s_ptr_gy;
-#endif
 
 static void handle_mouse_motion(const SDL_Event *ev)
 {
@@ -231,6 +249,7 @@ static void handle_mouse_button_down(const SDL_Event *ev)
 #endif
     if (ev->button.button == SDL_BUTTON_LEFT)  g_lmb_clicked = 1;
     if (ev->button.button == SDL_BUTTON_RIGHT) g_rmb_clicked = 1;
+    if (ev->button.button == SDL_BUTTON_MIDDLE) g_swap_actor_request = 1;
 }
 
 /* ---- touch (Switch / desktop; Vita → touch_vita.c) -------------------- */
@@ -411,6 +430,9 @@ void PlatformPumpEvents(void)
             break;
         case SDL_MOUSEBUTTONDOWN:
             handle_mouse_button_down(&ev);
+            break;
+        case SDL_MOUSEWHEEL:              /* modern controls: switch character */
+            if (g_modern_controls && ev.wheel.y != 0) g_swap_actor_request = 1;
             break;
 
         case SDL_FINGERDOWN:

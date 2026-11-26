@@ -73,6 +73,9 @@ int16_t g_mouse_y = 0;
 
 uint8_t g_lmb_clicked = 0;
 uint8_t g_rmb_clicked = 0;
+/* Tab / wheel / middle button / pad combo: switch Franc <-> Edek. With
+ * "sterowanie współczesne" the right button opens the panel instead. */
+uint8_t g_swap_actor_request = 0;
 uint16_t g_key_state = 0;
 
 uint8_t g_quicksave_request = 0;  /* T53 — F5 latch */

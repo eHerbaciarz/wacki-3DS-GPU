@@ -164,7 +164,15 @@ typedef struct {
     uint8_t r, g, b, a;
 } Vtx;
 
-enum { QUAD_TOP_L = 0, QUAD_TOP_R = 1, QUAD_BOT = 2, QUAD_COUNT = 3 };
+enum { QUAD_TOP_L = 0, QUAD_TOP_R = 1, QUAD_BOT = 2,
+       QUAD_POP_OUT = 3, QUAD_POP_RIM = 4, QUAD_POP = 5, QUAD_COUNT = 6 };
+
+/* Two solid-colour 8×8 blocks in an unused corner of the frame texture
+ * (below the 481 frame rows): the frame around the panel pop-up of
+ * "sterowanie współczesne" is drawn by sampling them. */
+#define SWATCH_Y      496
+#define SWATCH_DARK_X 0
+#define SWATCH_RIM_X  8
 
 static C3D_RenderTarget *s_rt_top[2]; /* left, right eye */
 static C3D_RenderTarget *s_rt_bot;
@@ -328,6 +336,24 @@ static void draw_on(C3D_RenderTarget *rt, int screen_w, int screen_h,
     C3D_DrawArrays(GPU_TRIANGLE_STRIP, quad * 4, 4);
 }
 
+/* Extra quads on the target draw_on() just cleared (same texture). */
+static void draw_more(int quad)
+{
+    C3D_DrawArrays(GPU_TRIANGLE_STRIP, quad * 4, 4);
+}
+
+static void set_popup_quads(const WideRect *r, float kx)
+{
+    float b  = r->p_border;
+    float x0 = r->p_x * kx, x1 = (r->p_x + r->p_w) * kx;
+    float y0 = r->p_y,      y1 = r->p_y + r->p_h;
+    set_quad(QUAD_POP_OUT, x0 - 2 * b * kx, y0 - 2 * b, x1 + 2 * b * kx, y1 + 2 * b,
+             SWATCH_DARK_X + 2, SWATCH_Y + 2, SWATCH_DARK_X + 6, SWATCH_Y + 6);
+    set_quad(QUAD_POP_RIM, x0 - b * kx, y0 - b, x1 + b * kx, y1 + b,
+             SWATCH_RIM_X + 2, SWATCH_Y + 2, SWATCH_RIM_X + 6, SWATCH_Y + 6);
+    set_quad(QUAD_POP, x0, y0, x1, y1, 0.0f, 400.0f, 640.0f, 480.0f);
+}
+
 static void apply_filter(int smooth)
 {
     GPU_TEXTURE_FILTER_PARAM min = smooth ? GPU_LINEAR : GPU_NEAREST;
@@ -358,6 +384,12 @@ static int alloc_eye(int eye)
         return 0;
     }
     memset(s_stage[eye], 0, TEX_W * TEX_H * sizeof(uint16_t));
+    for (int y = 0; y < 8; ++y)
+        for (int x = 0; x < 8; ++x) {
+            s_stage[eye][(size_t)(SWATCH_Y + y) * TEX_W + SWATCH_DARK_X + x] = pack_rgb565(10, 10, 14);
+            s_stage[eye][(size_t)(SWATCH_Y + y) * TEX_W + SWATCH_RIM_X + x]  = pack_rgb565(222, 200, 120);
+        }
+    GSPGPU_FlushDataCache(s_stage[eye], TEX_W * TEX_H * sizeof(uint16_t));
     s_tex_ok[eye] = 1;
     s_prev_smooth = -1;   /* filter set (again) by the present */
     perf_log_msg("gpu: %s texture %dx%d RGB565 in %s", eye ? "right-eye" : "frame",
@@ -869,16 +901,22 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
     set_quad(QUAD_BOT, 0.0f, 0.0f, (float)BOT_WIDTH, (float)BOT_HEIGHT,
              (float)src_x, (float)src_y,
              (float)(src_x + src_region_w), (float)(src_y + src_region_h));
+    int popup = wide_on && wr.popup;
+    if (popup) set_popup_quads(&wr, kx);
     GSPGPU_FlushDataCache(s_vbuf, sizeof(Vtx) * QUAD_COUNT * 4);
 
     if (top_redraw) {
         draw_on(s_wide_active ? s_rt_wide : s_rt_top[0], top_w, TOP_HEIGHT,
                 &s_tex[0], QUAD_TOP_L);
+        if (popup) { draw_more(QUAD_POP_OUT); draw_more(QUAD_POP_RIM); draw_more(QUAD_POP); }
         if (stereo_enabled) {
             /* Without a background snapshot this frame (menus paint and
              * present directly), both eyes get the same flat picture. */
             draw_on(s_rt_top[1], TOP_WIDTH, TOP_HEIGHT,
                     s_have_right ? &s_tex[1] : &s_tex[0], QUAD_TOP_R);
+            /* the pop-up sits on the screen plane (no shift) */
+            if (popup) { C3D_TexBind(0, &s_tex[0]);
+                         draw_more(QUAD_POP_OUT); draw_more(QUAD_POP_RIM); draw_more(QUAD_POP); }
         }
         s_prev_disparity_px = disparity_px_now;
     }

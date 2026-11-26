@@ -84,6 +84,11 @@ int platform_pad_handle_event(const SDL_Event *ev)
             s_back_combo = 1;
             return 1;
         }
+        if (ev->cbutton.button == SDL_CONTROLLER_BUTTON_B && back_held) {
+            g_swap_actor_request = 1;               /* View + B = character */
+            s_back_combo = 1;
+            return 1;
+        }
         if (ev->cbutton.button == SDL_CONTROLLER_BUTTON_X && back_held) {
             HintsRequest();
             s_back_combo = 1;

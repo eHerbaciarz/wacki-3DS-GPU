@@ -63,3 +63,33 @@ wypadają poza przycięty obraz.
 | `src/platform/3ds/video_3ds_c3d.c` | Backend 3DS. Każdy backend rysuje jeden prostokąt według `WideLayoutGet()`. |
 
 Testy: `tests/test_filters.c` (`wide_layout_*`).
+
+## Sterowanie współczesne
+
+Opcja jest domyślnie wyłączona. Włącza ją **ikona myszy** obok żarówki na
+głównym ekranie Opcji: z zapaloną prawą połówką jest włączona, szara
+i przekreślona jest wyłączona. Zapis w `wacki.cfg`: `modern_controls=0|1`.
+
+W panoramie panel się nie wysuwa. **Prawy przycisk** pokazuje panel
+w ramce na środku ekranu, w skali 0,8 sceny, a scenę za nim przyciemnia.
+Kursor sam przeskakuje do panelu. Panel znika:
+
+- po ponownym prawym kliknięciu (kursor wraca tam, gdzie był);
+- po podniesieniu przedmiotu, żeby od razu użyć go na scenie (kursor też
+  wraca);
+- po kliknięciu obok panelu (to kliknięcie nic więcej nie robi);
+- gdy zaczyna się kwestia dialogu.
+
+Postać zmieniasz wtedy innym przyciskiem:
+
+| Platforma | Zmiana postaci |
+|-----------|----------------|
+| PC | `Tab`, kółko myszy albo środkowy przycisk |
+| Pad na PC i Steam Decku | View + B |
+| Switch | − + B |
+| Vita | SELECT + kółko |
+| 3DS | SELECT + B |
+
+W 4:3 prawy przycisk zmienia postać jak w oryginale. Na 3DS ramkę
+rysują dwa jednolite bloki koloru w nieużywanym rogu tekstury. Stary
+backend procesorowy (`fb`) nie ma panoramy, więc nie ma też tego panelu.

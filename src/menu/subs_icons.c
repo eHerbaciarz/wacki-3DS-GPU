@@ -4,7 +4,9 @@
  * src/menu/subs_icons.c — the port's own icons in the options menus.
  *
  * Main Options screen: a light bulb = hints (text/hints.c) on/off, off by
- * default; lit with rays when on, grey and crossed out when off.
+ * default; lit with rays when on, grey and crossed out when off. Next to
+ * it a mouse = "sterowanie współczesne" (util/wide_layout.c): right
+ * button lit = on.
  *
  * Solund (sound) screen, next to the game's own buttons:
  *
@@ -402,8 +404,71 @@ static const char *const s_bulb[EAR_N] = {
     "............oooooooo............",
 };
 
+/* 'b' body, 'r' right button, 'l' seam, 'o' outline — the "sterowanie
+ * współczesne" switch next to the bulb */
+static const char *const s_mouse[EAR_N] = {
+    "................................",
+    "................................",
+    "............oooooooo............",
+    "..........ooobbllrrooo..........",
+    ".........oobbbbllrrrroo.........",
+    "........oobbbbbllrrrrroo........",
+    "........obbbbbbllrrrrrro........",
+    ".......oobbbbbbllrrrrrroo.......",
+    ".......obbbbbbbllrrrrrrro.......",
+    ".......obbbbbbbllrrrrrrro.......",
+    ".......obbbbbbbllrrrrrrro.......",
+    ".......obbbbbbbllrrrrrrro.......",
+    ".......ollllllllllllllllo.......",
+    ".......ollllllllllllllllo.......",
+    ".......obbbbbbbbbbbbbbbbo.......",
+    ".......obbbbbbbbbbbbbbbbo.......",
+    ".......obbbbbbbbbbbbbbbbo.......",
+    ".......obbbbbbbbbbbbbbbbo.......",
+    ".......obbbbbbbbbbbbbbbbo.......",
+    ".......obbbbbbbbbbbbbbbbo.......",
+    ".......obbbbbbbbbbbbbbbbo.......",
+    ".......obbbbbbbbbbbbbbbbo.......",
+    ".......obbbbbbbbbbbbbbbbo.......",
+    ".......obbbbbbbbbbbbbbbbo.......",
+    ".......oobbbbbbbbbbbbbboo.......",
+    "........obbbbbbbbbbbbbbo........",
+    "........oobbbbbbbbbbbboo........",
+    ".........oobbbbbbbbbboo.........",
+    "..........ooobbbbbbooo..........",
+    "............oooooooo............",
+    "................................",
+    "................................",
+};
+
 extern int g_hints_on;
-static int s_bulb_x = -1, s_bulb_y = -1, s_bulb_hover;
+static int s_bulb_x = -1, s_bulb_y = -1, s_bulb_hover, s_mouse_hover;
+#define MOUSE_DX   (EAR_N + 2 * GAP)          /* mouse icon right of the bulb */
+
+static void slash(int x, int y)
+{
+    uint8_t dark = pal_near(0, 0, 0), red = pal_near(230, 25, 25);
+    for (int t = 2; t < EAR_N - 2; ++t)
+        for (int k = -2; k <= 2; ++k)
+            put(x + t + k, y + EAR_N - 1 - t, (k == -2 || k == 2) ? dark : red);
+}
+
+static void paint_mouse(int x, int y)
+{
+    int on = g_modern_controls;
+    uint8_t dark = pal_near(0, 0, 0);
+    uint8_t body = s_mouse_hover ? pal_near(235, 235, 235) : pal_near(190, 190, 195);
+    uint8_t rbtn = on ? (s_mouse_hover ? pal_near(255, 230, 120) : pal_near(250, 200, 40))
+                      : pal_near(140, 140, 140);
+    uint8_t seam = pal_near(70, 70, 80);
+    for (int j = 0; j < EAR_N; ++j)
+        for (int i = 0; i < EAR_N; ++i) {
+            char c = s_mouse[j][i];
+            uint8_t v = c == 'b' ? body : c == 'r' ? rbtn : c == 'l' ? seam : dark;
+            if (c != '.') put(x + i, y + j, v);
+        }
+    if (!on) slash(x, y);
+}
 
 void HintIconBegin(void)
 {
@@ -414,7 +479,8 @@ void HintIconBegin(void)
 void HintIconPaint(void)
 {
     if (!g_back_shadow) return;
-    if (s_bulb_x < 0) place_box(EAR_N, EAR_N, &s_bulb_x, &s_bulb_y);
+    if (s_bulb_x < 0) place_box(MOUSE_DX + EAR_N, EAR_N, &s_bulb_x, &s_bulb_y);
+    paint_mouse(s_bulb_x + MOUSE_DX, s_bulb_y);
     int on = g_hints_on, x = s_bulb_x, y = s_bulb_y;
     uint8_t dark  = pal_near(0, 0, 0);
     uint8_t glass = on ? pal_near(255, 225, 80) : pal_near(150, 150, 150);
@@ -437,18 +503,24 @@ void HintIconPaint(void)
                 put(x + ax + (n ? (bx - ax) * t / n : 0), y + ay + (n ? (by - ay) * t / n : 0), ray);
         }
     } else {                           /* red slash, dark edged */
-        uint8_t red = pal_near(230, 25, 25);
-        for (int t = 2; t < EAR_N - 2; ++t)
-            for (int k = -2; k <= 2; ++k)
-                put(x + t + k, y + EAR_N - 1 - t, (k == -2 || k == 2) ? dark : red);
+        slash(x, y);
     }
 }
 
 int HintIconUpdate(void)
 {
-    if (s_bulb_x < 0) place_box(EAR_N, EAR_N, &s_bulb_x, &s_bulb_y);
+    if (s_bulb_x < 0) place_box(MOUSE_DX + EAR_N, EAR_N, &s_bulb_x, &s_bulb_y);
     s_bulb_hover = g_mouse_x >= s_bulb_x && g_mouse_x < s_bulb_x + EAR_N &&
                    g_mouse_y >= s_bulb_y && g_mouse_y < s_bulb_y + EAR_N;
+    s_mouse_hover = g_mouse_x >= s_bulb_x + MOUSE_DX && g_mouse_x < s_bulb_x + MOUSE_DX + EAR_N &&
+                    g_mouse_y >= s_bulb_y && g_mouse_y < s_bulb_y + EAR_N;
+    if (s_mouse_hover) {
+        if (g_lmb_clicked) { g_lmb_clicked = 0; ModernControlsToggle(); return 1; }
+        SubtitlesHint(g_modern_controls
+            ? "Sterowanie wsp\xC3\xB3\xC5\x82""czesne: w\xC5\x82\xC4\x85""czone (w panoramie PPM = panel, Tab / k\xC3\xB3\xC5\x82""ko = posta\xC4\x87)"
+            : "Sterowanie wsp\xC3\xB3\xC5\x82""czesne: wy\xC5\x82\xC4\x85""czone (klasyczne)", 150);
+        return 1;
+    }
     if (!s_bulb_hover) return 0;
     if (g_lmb_clicked) {
         g_lmb_clicked = 0;

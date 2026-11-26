@@ -73,6 +73,12 @@ int platform_pad_handle_event(const SDL_Event *ev)
             s_minus_combo = 1;
             return 1;
         }
+        /* MINUS + physical B (south = SDL A) = switch character */
+        if (ev->cbutton.button == SDL_CONTROLLER_BUTTON_A && minus_held) {
+            g_swap_actor_request = 1;
+            s_minus_combo = 1;
+            return 1;
+        }
         /* MINUS + R = pixel-art filter (Scale2x / 2xSaI / xBR) */
         if (ev->cbutton.button == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER && minus_held) {
             plat_video_cycle_pixel_filter();

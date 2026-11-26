@@ -116,7 +116,7 @@ void platform_pad_handle_buttons(void)
     /* (SELECT + A = hint instead, see below.) */
     if ((down & KEY_A) && !(held & KEY_SELECT)) g_lmb_clicked = 1;
     /* Physical B = right click. */
-    if (down & KEY_B) g_rmb_clicked = 1;
+    if ((down & KEY_B) && !(held & KEY_SELECT)) g_rmb_clicked = 1;
     /* SELECT is a modifier: SELECT+Y = colour filter, SELECT+X = zoom
      * filter (each shows a hint and is saved in wacki.cfg). SELECT on
      * its own still toggles the shoulder hand-mode — now on RELEASE, and
@@ -140,6 +140,10 @@ void platform_pad_handle_buttons(void)
         platform_video_cycle_zoom();
     }
 
+    if (select_held && (down & KEY_B)) {
+        g_swap_actor_request = 1;          /* SELECT+B: switch character */
+        s_select_combo = 1;
+    }
     if (select_held && (down & KEY_A)) {
         HintsRequest();                    /* SELECT+A: hint (text/hints.c) */
         s_select_combo = 1;

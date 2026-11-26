@@ -301,12 +301,25 @@ void HandleSceneInput(void)
     if (s_reentry_depth > 0) return;
     ++s_reentry_depth;
 
-    /* RMB → toggle active actor. */
+    /* RMB → toggle active actor; with "sterowanie współczesne" in the
+     * panorama it opens / closes the panel pop-up (util/wide_layout.c)
+     * and the character is switched by Tab / wheel / pad combo. */
     if (g_rmb_clicked) {
-        g_active_actor ^= 1;
-        LOG_TRACE("scene", "RMB → active actor = %s", g_active_actor ? "Fjej" : "Ebek");
         g_rmb_clicked = 0;
+        if (g_modern_controls && WideLayoutActive()) {
+            WideLayoutTogglePopup();
+        } else {
+            g_active_actor ^= 1;
+            LOG_TRACE("scene", "RMB → active actor = %s", g_active_actor ? "Fjej" : "Ebek");
+        }
     }
+    if (g_swap_actor_request) {
+        g_swap_actor_request = 0;
+        g_active_actor ^= 1;
+        LOG_TRACE("scene", "swap → active actor = %s", g_active_actor ? "Fjej" : "Ebek");
+    }
+    /* a click beside the pop-up closes it and goes nowhere else */
+    if (g_lmb_clicked && WideLayoutPopupClickOutside()) g_lmb_clicked = 0;
 
     /* Panel + scene hit-tests. PGFT Inner already runs these before us
      * in the normal flow, but other callers may not have — idempotent. */

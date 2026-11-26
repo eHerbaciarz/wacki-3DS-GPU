@@ -59,6 +59,11 @@ int platform_pad_handle_event(const SDL_Event *ev)
         }
         return 0;
     case SDL_CONTROLLERBUTTONDOWN:
+        if (ev->cbutton.button == SDL_CONTROLLER_BUTTON_B && select_held) {
+            g_swap_actor_request = 1;               /* SELECT + circle = character */
+            s_select_combo = 1;
+            return 1;
+        }
         if (ev->cbutton.button == SDL_CONTROLLER_BUTTON_X && select_held) {
             HintsRequest();
             s_select_combo = 1;

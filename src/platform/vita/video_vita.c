@@ -100,6 +100,13 @@ void vita_video_touch_to_game(float nx, float ny, int *gx, int *gy)
     screen_to_game(nx * (float)SCREEN_W, ny * (float)SCREEN_H, gx, gy);
 }
 
+/* No mouse pointer to move on the Vita (touch / pad cursor). */
+int platform_video_game_to_window(int gx, int gy, int *wx, int *wy)
+{
+    (void)gx; (void)gy; (void)wx; (void)wy;
+    return 0;
+}
+
 /* SDL mouse events (platform_sdl.c): window = screen pixels. */
 void platform_video_window_to_game(int wx, int wy, int *gx, int *gy)
 {
@@ -312,6 +319,23 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
         SDL_RenderSetClipRect(s_ren, &clip);
         SDL_RenderCopy(s_ren, src_tex, &src, &dst);
         SDL_RenderSetClipRect(s_ren, NULL);
+        if (wr.popup) {         /* modern controls: the panel pop-up */
+            int b = (int)(wr.p_border + 0.5f);
+            SDL_Rect pr = { (int)(wr.p_x + 0.5f), (int)(wr.p_y + 0.5f),
+                            (int)(wr.p_w + 0.5f), (int)(wr.p_h + 0.5f) };
+            SDL_SetRenderDrawBlendMode(s_ren, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(s_ren, 0, 0, 0, 90);
+            SDL_RenderFillRect(s_ren, NULL);
+            SDL_SetRenderDrawBlendMode(s_ren, SDL_BLENDMODE_NONE);
+            SDL_Rect outer = { pr.x - 2 * b, pr.y - 2 * b, pr.w + 4 * b, pr.h + 4 * b };
+            SDL_Rect inner = { pr.x - b, pr.y - b, pr.w + 2 * b, pr.h + 2 * b };
+            SDL_SetRenderDrawColor(s_ren, 10, 10, 14, 255);
+            SDL_RenderFillRect(s_ren, &outer);
+            SDL_SetRenderDrawColor(s_ren, 222, 200, 120, 255);
+            SDL_RenderFillRect(s_ren, &inner);
+            SDL_Rect ps = { 0, 400 * tex_k, w * tex_k, (h - 400) * tex_k };
+            SDL_RenderCopy(s_ren, src_tex, &ps, &pr);
+        }
     } else {
         SDL_RenderCopy(s_ren, src_tex, NULL, &s_game_rect);
     }
