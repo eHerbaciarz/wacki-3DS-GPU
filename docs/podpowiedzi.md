@@ -59,7 +59,10 @@ Gra zapisuje też w logu przy każdej podpowiedzi etap, komnatę i tło, np.
 `etap 1, komnata 'X', tlo 'Y.pic'`.
 
 Obecny `pl.txt` to **szkic do sprawdzenia**: jest ułożony własnymi słowami
-na podstawie poradników, a słowa po `@` są zgadywane.
+na podstawie poradników. Słowa po `@` pasują do prawdziwych nazw komnat
+(gra ma 4 etapy, 24 komnaty); test `hints_shipped_file_covers_every_room`
+pilnuje, żeby każda komnata miała swój temat. Które zagadki są w której
+komnacie — do sprawdzenia w grze.
 
 Kod: `src/text/hints.c`, ikona w `src/menu/subs_icons.c`, testy w
 `tests/test_subtitles.c` (`hints_*`).

@@ -322,10 +322,41 @@ TEST(hints_levels_wait)
     HintsUnload();
 }
 
+/* the shipped podpowiedzi/pl.txt: every room of the game (names from
+ * tools/napisy/komnaty.bat) gets its own topic, not the stage's general */
+TEST(hints_shipped_file_covers_every_room)
+{
+    static const struct { int etap; const char *room; } rooms[] = {
+        {1,"maluch.pic"},{1,"klatka2.pic"},{1,"kiosk21.pic"},{1,"plac.pic"},
+        {2,"foto3.pic"},{2,"baza3.pic"},{2,"platze3.pic"},{2,"zaple3.pic"},
+        {2,"korlab5.pic"},{2,"komora3.pic"},{2,"magaz3j.pic"},{2,"stacja3.pic"},
+        {3,"kop2.pic"},{3,"wejkop2.pic"},{3,"wartow2.pic"},{3,"batslon2.pic"},
+        {3,"prasa2.pic"},{3,"wewarsz2.pic"},
+        {4,"lewybrz.pic"},{4,"ladowis.pic"},{4,"chatacz.pic"},{4,"kociol.pic"},
+        {4,"kram.pic"},{4,"przystan.pic"} };
+    FILE *fp = fopen("podpowiedzi/pl.txt", "rb");
+    ASSERT_TRUE(fp != NULL);
+    static char buf[64 * 1024];
+    size_t n = fread(buf, 1, sizeof buf, fp);
+    fclose(fp);
+    ASSERT_TRUE(HintsLoadBuffer(buf, n) > 20);
+    for (size_t i = 0; i < sizeof rooms / sizeof rooms[0]; ++i) {
+        int general = HintsFindTopic(rooms[i].etap, "init", NULL);
+        int t = HintsFindTopic(rooms[i].etap, rooms[i].room, NULL);
+        if (t < 0 || t == general)
+            fprintf(stderr, "  no topic for etap %d %s\n", rooms[i].etap, rooms[i].room);
+        ASSERT_TRUE(t >= 0 && t != general);
+    }
+    /* wejkop2 must not fall into "kop2" (the mine inside) */
+    ASSERT_TRUE(HintsFindTopic(3, "wejkop2.pic", NULL) != HintsFindTopic(3, "kop2.pic", NULL));
+    HintsUnload();
+}
+
 SUITE(subtitles)
 {
     RUN_TEST(hints_parse_and_find);
     RUN_TEST(hints_levels_wait);
+    RUN_TEST(hints_shipped_file_covers_every_room);
     RUN_TEST(item_name_shown_above_panel_while_hovered);
     RUN_TEST(menu_hint_shows_without_file_or_option);
     RUN_TEST(parse_counts_entries);
