@@ -341,8 +341,23 @@ void HandleSceneInput(void)
 
         int active_actor = g_active_actor & 1;
 
+        /* Issue #14: an actor busy with a scripted action (the script sets
+         * bit 0x8000 in var[1] Ebek / var[2] Fjej — the same "frozen" bit
+         * walker.c honours — e.g. Fjej making the girl in the sandbox
+         * laugh) takes no new orders until it is over: a walk or another
+         * verb replaced his action animation, its end event never came and
+         * the game hung with the girl laughing forever. The panel and
+         * switching to the other character (who is free) still work. */
+        int busy = (g_script_vars[1 + active_actor] & 0x8000u) != 0;
+        int actor_verb = have_hover && (hover_verb == ACTOR_VERB_EBEK ||
+                                        hover_verb == ACTOR_VERB_FJEJ);
+
         if (g_mouse_y >= HUD_PANEL_TOP_Y) {
             handle_panel_click(have_hover, hover_verb);
+        } else if (busy && !actor_verb) {
+            LOG_TRACE("scene", "%s busy (var[%d]=0x%X) — click (%d,%d) ignored",
+                      active_actor ? "Fjej" : "Ebek", 1 + active_actor,
+                      (unsigned)g_script_vars[1 + active_actor], g_mouse_x, g_mouse_y);
         } else if (have_hover) {
             handle_scene_entity_click(hover_verb, active_actor);
             /* NO auto-walk-to-mouse here. The verb script itself walks

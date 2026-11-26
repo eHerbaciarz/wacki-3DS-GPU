@@ -566,6 +566,18 @@ static void backstep_to_walkable(int sx, int sy, int *tx_io, int *ty_io)
  * target_y) is reachable (used by waypoint advance and by callers that
  * pre-clipped via line_clip).
  * =================================================================== */
+/* Drop the actor's waypoint chain (issue #14): a script that takes the
+ * actor over for an action (attach-prop) must not have
+ * PerActorWaypointAdvanceTick re-bind a walk leg a frame later — that
+ * swapped the action animation for a walk, its end event never fired and
+ * the game hung (girl in the sandbox laughing forever). */
+void ActorWaypointsCancel(int actor_idx)
+{
+    if (actor_idx < 0 || actor_idx > 1) return;
+    s_wp[actor_idx].path_active = 0;
+    s_wp[actor_idx].path_index  = -1;
+}
+
 int BindActorWalkerDirect(int actor_idx, int target_x, int target_y)
 {
     if (actor_idx < 0 || actor_idx > 1) return 0;
