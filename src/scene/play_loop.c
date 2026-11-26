@@ -267,7 +267,11 @@ static void handle_pause_menu_request(int *quit, const char **next_scene)
      * show the current scene, not a stale snapshot from an earlier menu.
      * Mirrors OpenOptionsMenu / the Load sub-menu, which snapshot first. */
     SnapshotBackbufferForMenu();
+    extern uint8_t g_pause_menu_open;
+    g_pause_menu_open = 1;
     int rc = RunMenuScene(1, opt_get_pytanie_scene());
+    g_pause_menu_open = 0;
+    g_pause_menu_request = 0;      /* a press while it was open is spent */
     LOG_TRACE("scene", "F12 Pytanie rc=%d", rc);
     if (rc == PYTANIE_RC_TAK) {
         g_game_over_code = GAME_OVER_USER_QUIT;
