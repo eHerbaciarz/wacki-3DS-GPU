@@ -80,6 +80,11 @@ void PlatformSetTextInput(int on)
 
 /* ---- init / shutdown -------------------------------------------------- */
 
+#ifndef __ANDROID__
+/* src/platform/sdl/autoplay.c — only linked into desktop builds */
+void AutoplayTick(void) __attribute__((weak));
+#endif
+
 int PlatformInit(int w, int h, const char *title)
 {
 #ifdef SDL_HINT_APP_NAME
@@ -426,6 +431,9 @@ void PlatformPumpEvents(void)
     }
 
     if (!g_headless) poll_virtual_cursor();
+#ifndef __ANDROID__
+    if (AutoplayTick) AutoplayTick();      /* WACKI_AUTOPLAY (desktop) */
+#endif
 #ifdef __ANDROID__
     if (!g_headless) wacki_overlay_tick();
 #endif

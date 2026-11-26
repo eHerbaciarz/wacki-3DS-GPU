@@ -340,6 +340,10 @@ void ScriptCallAttachProp(uint16_t actor, uint16_t prop, int keep)
         /* Op 0x3B path: full walker-state reset (same shape as op 0x1E
          * SUBSCRIPT_CALL and op 0x23 SWAP_ATLAS). */
         reset_entity_walker_state(e);
+        /* …and no pending waypoint legs of an interrupted walk (#14) */
+        extern void ActorWaypointsCancel(int actor_idx);
+        if (e == g_actor[0]) ActorWaypointsCancel(0);
+        if (e == g_actor[1]) ActorWaypointsCancel(1);
     }
     LOG_TRACE("script", "attach-prop actor=0x%04X prop=0x%04X keep=%d %s", actor, prop, keep, a ? "ok" : "no-asset");
 }

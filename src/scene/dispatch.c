@@ -22,6 +22,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 extern int   read_dispatch_entry(uint32_t table_va, int idx,
                                  uint16_t *out_id, uint32_t *out_spv);
@@ -92,6 +93,14 @@ void DispatchClickEvent(uint16_t obj_id, uint16_t verb_id)
 
     if (verb_script || obj_script) {
         LOG_TRACE("dispatch", "obj=0x%04X verb=0x%04X%s%s%s", obj_id, verb_id, verb_script ? " V" : "", obj_script  ? " O" : "", g_dialog_active ? " [dlg-active]" : "");
+    }
+
+    /* WACKI_DUMP_SCRIPTS=1: the bytecode of every dispatched verb script
+     * to stderr (decoding bug reports; tools/script_dis.py) */
+    if (verb_script && getenv("WACKI_DUMP_SCRIPTS")) {
+        fprintf(stderr, "SCRIPT obj=%04X verb=%04X:", obj_id, verb_id);
+        for (int i = 0; i < 2048; ++i) fprintf(stderr, " %02X", verb_script[i]);
+        fputc('\n', stderr);
     }
 
     /* Verb script runs first with (this=obj, that=verb). A non-zero

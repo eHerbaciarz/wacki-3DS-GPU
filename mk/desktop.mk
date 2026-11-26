@@ -73,3 +73,6 @@ endif
 # (display-mode picker / windowed default) + the external-media + folder-picker
 # data-root impl.
 ENGINE_SRCS += src/platform/sdl/hooks_desktop.c $(SDL_PLATFORM_SRCS) $(SDL_DATAROOT_DESKTOP)
+
+# scripted input for tests / bug hunts (WACKI_AUTOPLAY=file)
+ENGINE_SRCS += src/platform/sdl/autoplay.c
