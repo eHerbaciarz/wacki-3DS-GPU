@@ -40,8 +40,8 @@ cp "$elf" "$game/wacki-ps2.elf"
 
 # ---- data drop-off note -------------------------------------------------
 cat > "$game/data/README.txt" <<'EOF'
-Skopiuj tutaj wszystkie pliki Dane_*.dta z oryginalnej plyty CD
-(Dane_01, Dane_02, Dane_10..14, Dane_21/22, 30/31/32, 40/41/42,
+Skopiuj tutaj wszystkie pliki Dane_*.dta oraz WACKI.EXE z oryginalnej
+plyty CD (Dane_01, Dane_02, Dane_10..14, Dane_21/22, 30/31/32, 40/41/42,
 50/51/52). Na prawdziwym PS2 caly folder "wacki" wrzucasz na pendrive,
 zeby silnik znalazl dane pod mass:/wacki/data/.
 EOF
@@ -60,13 +60,13 @@ WYMAGANE PLIKI GRY
 ------------------
 Port to wylacznie silnik — nie zawiera materialow chronionych prawem
 autorskim. Potrzebujesz wlasnej kopii oryginalnej plyty i plikow
-Dane_*.dta z niej. Wrzuc je do folderu wacki/data/ (patrz nizej).
+Dane_*.dta i WACKI.EXE z niej. Wrzuc je do folderu wacki/data/ (patrz nizej).
 
 URUCHOMIENIE — prawdziwy PS2 (FreeMcBoot / FreeDVDBoot + uLaunchELF)
 -------------------------------------------------------------------
 1. Skopiuj caly folder "wacki" z tego archiwum na pendrive (FAT32),
    tak by powstalo:  <pendrive>/wacki/wacki-ps2.elf
-                     <pendrive>/wacki/data/Dane_*.dta
+                     <pendrive>/wacki/data/Dane_*.dta + WACKI.EXE
 2. Wloz pendrive do PS2, odpal uLaunchELF i uruchom
    mass:/wacki/wacki-ps2.elf.
 
