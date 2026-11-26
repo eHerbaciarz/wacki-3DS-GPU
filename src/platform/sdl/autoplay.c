@@ -17,6 +17,7 @@
  *   room N           jump to komnata N of the stage (tests only)
  *   diag             diagnostics on (log ring)
  *   dump             write the log ring to wacki.log
+ *   mem              log heap in use (glibc only)
  *   quit             leave the game
  *   # ...            comment
  *
@@ -28,6 +29,9 @@
 #include "wacki/api.h"
 
 #include <SDL.h>
+#ifdef __GLIBC__
+#include <malloc.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -70,6 +74,12 @@ static void save_shot(const char *name)
 
 void AutoplayTick(void)
 {
+    static int slow_ms = -1;
+    if (slow_ms < 0) {                     /* WACKI_SLOW_MS: fake a slow device */
+        const char *e = getenv("WACKI_SLOW_MS");
+        slow_ms = e ? atoi(e) : 0;
+    }
+    if (slow_ms > 0) SDL_Delay((uint32_t)slow_ms);
     if (s_state == 0) return;
     if (s_state < 0) {
         const char *f = getenv("WACKI_AUTOPLAY");
@@ -117,6 +127,11 @@ void AutoplayTick(void)
                 if (g_script_vars[i]) LOG_INFO("autoplay", "var[0x%X]=0x%X", i, (unsigned)g_script_vars[i]);
         } else if (!strcmp(cmd, "diag")) {
             g_log_diag = 1;
+        } else if (!strcmp(cmd, "mem")) {
+#ifdef __GLIBC__
+            struct mallinfo2 mi = mallinfo2();
+            LOG_INFO("autoplay", "mem in-use=%zu KB mmap=%zu KB", mi.uordblks / 1024, mi.hblkhd / 1024);
+#endif
         } else if (!strcmp(cmd, "dump")) {
             LogDumpRing("autoplay");
         } else if (!strcmp(cmd, "quit")) {
