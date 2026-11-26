@@ -35,6 +35,7 @@
 #include <string.h>
 
 extern AnimAsset *g_menu_asset_10;     /* menu_loop.c: the scene's atlas */
+extern uint8_t    g_menu_free_click;   /* menu_loop.c: click beside the buttons */
 extern char       g_subtitles_lang[16];
 
 #define EAR_N      32
@@ -344,8 +345,8 @@ int SubsIconsUpdate(void)
     if (s_row_x < 0) place_row();
     s_hover = item_at(g_mouse_x, g_mouse_y);
     if (s_hover == -2) return 0;
-    if (g_lmb_clicked) {
-        g_lmb_clicked = 0;
+    if (g_menu_free_click) {
+        g_menu_free_click = 0;
         if (s_hover == -1) {
             OptionsToggleSdh();                       /* + saved + hint */
         } else {
@@ -515,15 +516,15 @@ int HintIconUpdate(void)
     s_mouse_hover = g_mouse_x >= s_bulb_x + MOUSE_DX && g_mouse_x < s_bulb_x + MOUSE_DX + EAR_N &&
                     g_mouse_y >= s_bulb_y && g_mouse_y < s_bulb_y + EAR_N;
     if (s_mouse_hover) {
-        if (g_lmb_clicked) { g_lmb_clicked = 0; ModernControlsToggle(); return 1; }
+        if (g_menu_free_click) { g_menu_free_click = 0; ModernControlsToggle(); return 1; }
         SubtitlesHint(g_modern_controls
             ? "Sterowanie wsp\xC3\xB3\xC5\x82""czesne: w\xC5\x82\xC4\x85""czone (w panoramie PPM = panel, Tab / k\xC3\xB3\xC5\x82""ko = posta\xC4\x87)"
             : "Sterowanie wsp\xC3\xB3\xC5\x82""czesne: wy\xC5\x82\xC4\x85""czone (klasyczne)", 150);
         return 1;
     }
     if (!s_bulb_hover) return 0;
-    if (g_lmb_clicked) {
-        g_lmb_clicked = 0;
+    if (g_menu_free_click) {
+        g_menu_free_click = 0;
         HintsToggle();                      /* + saved + hint */
         return 1;
     }

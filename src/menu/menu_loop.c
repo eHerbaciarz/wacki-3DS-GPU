@@ -203,6 +203,10 @@ static void resolve_menu_hover(SceneDef *scene, AnimAsset *buttons,
 /* Fire the SceneDef's on_click handler with the hovered button's id
  * (or -1 when nothing is hovered — the cb's per-frame logic still runs
  * that way, just no switch-case matches). Returns the cb's rc. */
+/* A click that hit none of the game's buttons — for the port's own icons
+ * drawn by after_paint (menu/subs_icons.c): set for the idle callback. */
+uint8_t g_menu_free_click = 0;
+
 static int run_menu_click_callback(SceneDef *scene,
                                    int hover_btn, uint16_t hover_id)
 {
@@ -210,6 +214,7 @@ static int run_menu_click_callback(SceneDef *scene,
     if (g_lmb_clicked && hover_btn >= 0) {
         trigger = (int)hover_id;
     }
+    g_menu_free_click = (g_lmb_clicked && hover_btn < 0) ? 1 : 0;
     g_lmb_clicked = 0;
     return scene->on_click(trigger);
 }
