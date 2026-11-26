@@ -315,5 +315,11 @@ void plat_video_message_box(const char *t, const char *b)        { (void)t; (voi
  * pixel filters on the PS2 — the picture stays as it is. */
 void platform_video_toggle_aspect_mode(void)                       {}
 void plat_video_cycle_pixel_filter(void)                           {}
+/* The PS2 cursor comes from the pad / USB mouse in game coordinates
+ * (system_ps2.c), so the window <-> game mapping is the identity. */
+void platform_video_window_to_game(int wx, int wy, int *gx, int *gy)
+{ *gx = wx; *gy = wy; }
+int  platform_video_game_to_window(int gx, int gy, int *wx, int *wy)
+{ (void)gx; (void)gy; (void)wx; (void)wy; return 0; }
 
 #endif /* WACKI_PS2 */

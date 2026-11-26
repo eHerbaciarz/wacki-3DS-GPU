@@ -120,7 +120,13 @@ void wacki_log(WackiLogLevel lvl, const char *tag, const char *fmt, ...)
     snprintf(line, sizeof line, "%5u.%03u [%s/%s] %s",
              (unsigned)(ms / 1000), (unsigned)(ms % 1000), k_lv[lvl], tag, msg);
     if (to_ring) {
+#ifdef WACKI_PS2
+        /* EE has no __atomic_fetch_add_4 in libgcc; the PS2 threads are
+         * cooperative, so a plain bump is enough there. */
+        unsigned i = (s_ring_next++) % LOG_RING_LINES;
+#else
         unsigned i = __atomic_fetch_add(&s_ring_next, 1, __ATOMIC_RELAXED) % LOG_RING_LINES;
+#endif
         snprintf(s_ring[i], LOG_LINE_MAX, "%s", line);
     }
     if (to_file) put_file_line(line);
