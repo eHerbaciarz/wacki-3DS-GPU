@@ -70,7 +70,7 @@ Opcja jest domyślnie wyłączona. Włącza ją **ikona myszy** obok żarówki n
 głównym ekranie Opcji: z zapaloną prawą połówką jest włączona, szara
 i przekreślona jest wyłączona. Zapis w `wacki.cfg`: `modern_controls=0|1`.
 
-W panoramie panel się nie wysuwa. **Prawy przycisk** pokazuje panel
+Panel się nie wysuwa. **Prawy przycisk** pokazuje panel
 w ramce na środku ekranu, w skali 0,8 sceny, a scenę za nim przyciemnia.
 Kursor sam przeskakuje do panelu. Panel znika:
 
@@ -90,6 +90,8 @@ Postać zmieniasz wtedy innym przyciskiem:
 | Vita | SELECT + kółko |
 | 3DS | SELECT + B |
 
-W 4:3 prawy przycisk zmienia postać jak w oryginale. Na 3DS ramkę
+Działa na każdym ekranie i w każdym trybie obrazu. W trybie 4:3 albo na
+ekranie 4:3 scena 640×400 jest dopasowana do ekranu, z pasami u góry
+i u dołu, a panel też wyskakuje na środku. Na 3DS ramkę
 rysują dwa jednolite bloki koloru w nieużywanym rogu tekstury. Stary
 backend procesorowy (`fb`) nie ma panoramy, więc nie ma też tego panelu.

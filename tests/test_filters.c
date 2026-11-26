@@ -272,7 +272,22 @@ TEST(wide_layout_modern_popup)
     ASSERT_FALSE(WideLayoutPopupOpen());
     ASSERT_FALSE(WideLayoutPopupClickOutside());
 
+    /* modern controls work in 4:3 too: the scene fitted, panel pops up */
+    WideLayoutSetScreen(640, 480);
+    wide_frame("4:3", 100, 1);
+    ASSERT_TRUE(WideLayoutActive());
+    ASSERT_TRUE(WideLayoutGet(640, 480, &r));
+    ASSERT_TRUE(r.scale > 0.99f && r.scale < 1.01f);
+    ASSERT_TRUE(r.dst_y > 39.9f && r.dst_y < 40.1f);     /* 640x400 in 640x480 */
+    ASSERT_TRUE(r.src_h > 399.9f);
+    WideLayoutTogglePopup();
+    ASSERT_TRUE(WideLayoutPopupOpen());
+    WideLayoutTogglePopup();
+    WideLayoutSetScreen(1280, 720);
+
     g_modern_controls = 0;
+    wide_frame("4:3", 100, 1);
+    ASSERT_FALSE(WideLayoutActive());               /* classic 4:3: as before */
     wide_reset();
 }
 

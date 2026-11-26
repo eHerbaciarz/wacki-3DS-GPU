@@ -176,8 +176,12 @@ static int screen_is_wide(int w, int h)
 void WideLayoutFrame(void)
 {
     int was = s_active;
-    s_active = s_marked && !g_cutscene_playing && WideAspectMode() != WIDE_OFF
-            && screen_is_wide(s_scr_w, s_scr_h);   /* a backend that draws it */
+    /* panorama on a wide screen — or, with "sterowanie współczesne", on any
+     * screen and in any aspect mode (then the scene without the panel strip,
+     * fitted, and the panel pops up) */
+    s_active = s_marked && !g_cutscene_playing && s_scr_w > 0 &&
+               (g_modern_controls ||
+                (WideAspectMode() != WIDE_OFF && screen_is_wide(s_scr_w, s_scr_h)));
     s_marked = 0;
 
     uint32_t now = SDL_GetTicks();
@@ -214,12 +218,17 @@ void WideLayoutFrame(void)
 static int compute(int scr_w, int scr_h, int cur_y, WideRect *r)
 {
     memset(r, 0, sizeof *r);
-    if (!s_active || !screen_is_wide(scr_w, scr_h)) return 0;
+    if (!s_active || scr_w <= 0 || scr_h <= 0) return 0;
+    int fit = 0;                      /* whole scene, bars where needed */
+    if (!screen_is_wide(scr_w, scr_h) || WideAspectMode() == WIDE_OFF) {
+        if (!g_modern_controls) return 0;
+        fit = 1;
+    }
 
     float W = (float)scr_w, H = (float)scr_h;
     float L = SCENE_H + PANEL_H * (s_t * s_t * (3.0f - 2.0f * s_t)); /* ease */
     float s;
-    if (WideAspectMode() == WIDE_BARS) {
+    if (fit || WideAspectMode() == WIDE_BARS) {
         s = H / SCENE_H;
         if (FRAME_W * s > W) s = W / FRAME_W;
     } else {
