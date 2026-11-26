@@ -158,8 +158,10 @@ def znajdz_dta_extract(podany):
     kandydaci = []
     if podany:
         kandydaci.append(podany)
-    repo = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    tu = os.path.dirname(os.path.abspath(__file__))
+    repo = os.path.abspath(os.path.join(tu, "..", ".."))
     for nazwa in ("dta-extract", "dta-extract.exe"):
+        kandydaci.append(os.path.join(tu, nazwa))            # obok skryptu
         kandydaci.append(os.path.join(repo, "dist", nazwa))
         w = shutil.which(nazwa)
         if w:
