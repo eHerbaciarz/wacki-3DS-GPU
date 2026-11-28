@@ -419,6 +419,27 @@ void StatsDump(void);
 uint32_t WackiRand(uint16_t bound);
 void     WackiRandSeed(uint32_t seed);
 
+/* ---- util/fill_layout.c: "stretch" = scene 16:9 + panel as in 4:3 --- */
+
+#define FILL_CROP_TOP 40           /* scene rows cut off at the top     */
+typedef struct {
+    float s_x, s_y, s_w, s_h;      /* scene: where on the screen        */
+    float src_y, src_h;            /* ... which frame rows (x: 0..640)  */
+    float p_x, p_y, p_w, p_h;      /* panel (frame rows 400..479)       */
+} FillRects;
+void FillLayoutMarkGameplay(void); /* hud_paint.c: the panel is on      */
+void FillLayoutKeep(void);         /* fades: keep this frame's layout   */
+void FillLayoutFrame(void);        /* graphics.c, before every present  */
+int  FillLayoutStretchMode(void);  /* aspect_mode = stretch             */
+int  FillLayoutMinY(void);         /* top cursor row in the scene       */
+int  FillLayoutGet(int scr_w, int scr_h, FillRects *r);  /* 1 = use it  */
+int  FillLayoutScreenToGame(int scr_w, int scr_h, float sx, float sy,
+                            int *gx, int *gy);
+
+/* ---- menu/controls_help.c: the buttons, under the pause question ---- */
+const uint8_t *ControlsHelpCompose(const uint8_t *shadow, const uint8_t *pal,
+                                   int w, int h);
+
 /* ---- heap.c ------------------------------------------------------ */
 
 void *xmalloc(uint32_t sz);

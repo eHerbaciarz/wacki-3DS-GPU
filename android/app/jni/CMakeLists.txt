@@ -104,6 +104,7 @@ set(WACKI_SRCS
     ${WACKI_ROOT}/src/vm/script_obj.c
     ${WACKI_ROOT}/src/vm/parser.c
     ${WACKI_ROOT}/src/util/rng.c
+    ${WACKI_ROOT}/src/util/fill_layout.c
     ${WACKI_ROOT}/src/hud/panel.c
     ${WACKI_ROOT}/src/hud/inventory.c
     ${WACKI_ROOT}/src/hud/items.c
@@ -143,6 +144,7 @@ set(WACKI_SRCS
     ${WACKI_ROOT}/src/menu/menu_loop.c
     ${WACKI_ROOT}/src/menu/main_menu.c
     ${WACKI_ROOT}/src/menu/port_attribution.c
+    ${WACKI_ROOT}/src/menu/controls_help.c
     # ---- shared SDL HAL (Makefile SDL_PLATFORM_SRCS) ----
     ${WACKI_ROOT}/src/platform/sdl/save_host.c
     ${WACKI_ROOT}/src/platform/sdl/file_host.c

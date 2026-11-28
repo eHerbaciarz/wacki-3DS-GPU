@@ -23,7 +23,9 @@ własny `src/platform/vita/video_vita.c` (desktop/Switch/handheldy bez zmian).
 - **Wygładzanie** (liniowe) domyślnie włączone, przełączane pierwszym
   przyciskiem ekranu **Grafika** (`s_opt_gfx1` / `video_mode`), tak jak na
   3DS; działa od razu.
-- **4:3 / stretch** jak dotąd (przycisk Y / F10): 4:3 = 725×544 na środku.
+- **4:3 / stretch** (trójkąt / F10): 4:3 = 725×544 na środku; stretch
+  w czasie gry = scena bez górnych 40 wierszy na 960×453 i panel jak
+  w 4:3 (725×91) pod nią (`src/util/fill_layout.c`), filmy i menu 4:3.
   **Dotyk** (tryb absolute) liczony przez ten sam prostokąt — wcześniej w
   4:3 cały panel był mapowany na całą grę mimo czarnych pasów.
 - **SDL2_mixer** nie jest już linkowany (kod go nie używa).

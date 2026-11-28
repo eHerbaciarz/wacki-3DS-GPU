@@ -354,3 +354,14 @@ void vm_stubs_reset(void)
      * leaking into the next test's FindEntityByVerbId calls. */
     EntityListClearAll();
 }
+
+/* util/fill_layout.c (linked into the tests through graphics.c) reads
+ * these; menu/controls_help.c isn't linked — its compose is a pass-through. */
+int  g_cutscene_playing = 0;
+char g_aspect_mode[16]  = "stretch";
+const uint8_t *ControlsHelpCompose(const uint8_t *shadow, const uint8_t *pal,
+                                   int w, int h)
+{
+    (void)pal; (void)w; (void)h;
+    return shadow;
+}

@@ -24,8 +24,10 @@
  *   - smoothing (linear filtering) on by default, following the FIRST
  *     button of the Grafika menu (s_opt_gfx1 / video_mode) like the 3DS
  *     GPU backend; it changes the moment the button is clicked;
- *   - 4:3 (725×544, centred, black bars) or stretch (960×544), as before
- *     (Y button / F10); touch maps through the same rectangle
+ *   - 4:3 (725×544, centred, black bars) or "stretch" (Y button / F10):
+ *     while playing, the scene without its top 40 rows over the whole
+ *     width and the panel as in 4:3 under it (src/util/fill_layout.c),
+ *     films / menus in 4:3; touch maps through the same rectangles
  *     (vita_video_touch_to_game, used by touch_vita.c);
  *   - every number goes to ux0:/data/wacki/wacki_perf.log
  *     (perf_log_vita.c), in the same format as the 3DS log. */
@@ -88,14 +90,27 @@ void vita_video_touch_to_game(float nx, float ny, int *gx, int *gy)
 {
     int w = s_fb_w > 0 ? s_fb_w : 640, h = s_fb_h > 0 ? s_fb_h : 480;
     float px = nx * (float)SCREEN_W, py = ny * (float)SCREEN_H;
-    int x = (int)((px - (float)s_game_rect.x) * (float)w / (float)s_game_rect.w);
-    int y = (int)((py - (float)s_game_rect.y) * (float)h / (float)s_game_rect.h);
+    if (FillLayoutScreenToGame(SCREEN_W, SCREEN_H, px, py, gx, gy)) return;
+    SDL_Rect gr = s_game_rect;
+    if (g_stretch_active) {                  /* films / menus: 4:3 */
+        int w43 = (SCREEN_H * 4 + 1) / 3;
+        gr.x = (SCREEN_W - w43) / 2; gr.y = 0; gr.w = w43; gr.h = SCREEN_H;
+    }
+    int x = (int)((px - (float)gr.x) * (float)w / (float)gr.w);
+    int y = (int)((py - (float)gr.y) * (float)h / (float)gr.h);
     if (x < 0) x = 0;
     if (y < 0) y = 0;
     if (x >= w) x = w - 1;
     if (y >= h) y = h - 1;
     *gx = x;
     *gy = y;
+}
+
+/* No mouse on the Vita: touch goes through vita_video_touch_to_game. */
+int platform_video_window_to_game(int wx, int wy, int *gx, int *gy)
+{
+    (void)wx; (void)wy; (void)gx; (void)gy;
+    return 0;
 }
 
 void platform_video_get_present_state(int *stretch_active,
@@ -240,6 +255,11 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
         changed_mode = 1;
     }
 
+    static int s_prev_fill = -1;             /* layout changed → redraw */
+    FillRects fr;
+    int fill = FillLayoutGet(SCREEN_W, SCREEN_H, &fr);
+    if (fill != s_prev_fill) { s_prev_fill = fill; changed_mode = 1; }
+
     int pal_changed = !s_have_prev || memcmp(s_prev_pal, pal, sizeof s_prev_pal) != 0;
     if (!pal_changed && !changed_mode && s_have_prev &&
         memcmp(s_prev, shadow, (size_t)w * h) == 0) {
@@ -267,7 +287,24 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
 
     SDL_SetRenderDrawColor(s_ren, 0, 0, 0, 255);
     SDL_RenderClear(s_ren);
-    SDL_RenderCopy(s_ren, s_tex[s_cur], NULL, &s_game_rect);
+    if (fill) {
+        /* "stretch" while playing (util/fill_layout.c): the scene without
+         * its top rows over the whole width, the panel as in 4:3 under it */
+        int ph = (int)(fr.p_h + 0.5f), pw = (int)(fr.p_w + 0.5f);
+        SDL_Rect ss = { 0, FILL_CROP_TOP, w, 400 - FILL_CROP_TOP };
+        SDL_Rect sd = { 0, 0, SCREEN_W, SCREEN_H - ph };
+        SDL_Rect ps = { 0, 400, w, h - 400 };
+        SDL_Rect pd = { (SCREEN_W - pw) / 2, SCREEN_H - ph, pw, ph };
+        SDL_RenderCopy(s_ren, s_tex[s_cur], &ss, &sd);
+        SDL_RenderCopy(s_ren, s_tex[s_cur], &ps, &pd);
+    } else if (g_stretch_active) {
+        /* films / menus: 4:3 with bars */
+        int w43 = (SCREEN_H * 4 + 1) / 3;
+        SDL_Rect d = { (SCREEN_W - w43) / 2, 0, w43, SCREEN_H };
+        SDL_RenderCopy(s_ren, s_tex[s_cur], NULL, &d);
+    } else {
+        SDL_RenderCopy(s_ren, s_tex[s_cur], NULL, &s_game_rect);
+    }
     uint64_t t1 = perf_now();
     SDL_RenderPresent(s_ren);
     uint64_t t2 = perf_now();

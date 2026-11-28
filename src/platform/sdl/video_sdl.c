@@ -6,8 +6,10 @@
  * Adds g_aspect_mode support ("stretch" / "4:3"):
  *   "4:3"    — SDL_RenderSetLogicalSize(640,480): SDL letterboxes automatically
  *              when output AR differs (e.g. Switch 1280×720 → black bars).
- *   "stretch"— SDL_RenderSetLogicalSize disabled (0,0); texture blitted with
- *              explicit full-window SDL_Rect → edge-to-edge, no bars.
+ *   "stretch"— SDL_RenderSetLogicalSize disabled (0,0); while playing the
+ *              scene (top 40 rows cut, 16:9) fills the width and the panel
+ *              stays as in 4:3 under it; films / menus 4:3 with bars
+ *              (src/util/fill_layout.c). Mouse: platform_video_window_to_game.
  *              SDL's RenderSetLogicalSize always preserves AR (per its docs)
  *              so disproportionate fill requires bypassing it entirely.
  *
@@ -77,6 +79,49 @@ void platform_video_get_present_state(int *stretch_active,
     *fb_w = s_fb_w; *fb_h = s_fb_h;
     if (s_win) SDL_GetWindowSize(s_win, win_w, win_h);
     else { *win_w = s_fb_w; *win_h = s_fb_h; }
+}
+
+/* "stretch": where the picture goes on a screen of ow×oh pixels.
+ * Gameplay frames (util/fill_layout.c): the scene (frame rows 40..399)
+ * over the whole width, the panel (rows 400..479) as in 4:3 under it.
+ * Anything else: 4:3, centred, black bars. Returns 1 for the gameplay
+ * layout (scene in *sc, panel in *pn), 0 for 4:3 (in *sc). */
+static int stretch_rects(int ow, int oh, SDL_Rect *sc, SDL_Rect *pn)
+{
+    FillRects r;
+    if (FillLayoutGet(ow, oh, &r)) {
+        int ph = (int)(r.p_h + 0.5f), pw = (int)(r.p_w + 0.5f);
+        sc->x = 0; sc->y = 0; sc->w = ow; sc->h = oh - ph;
+        pn->x = (ow - pw) / 2; pn->y = oh - ph; pn->w = pw; pn->h = ph;
+        return 1;
+    }
+    int w = (oh * 4 + 1) / 3, h = oh;
+    if (w > ow) { w = ow; h = (ow * 3) / 4; }
+    sc->x = (ow - w) / 2; sc->y = (oh - h) / 2; sc->w = w; sc->h = h;
+    return 0;
+}
+
+/* Mouse position in the window → game coordinates, in "stretch" (where
+ * SDL's logical size is off). 0 = not in stretch mode, caller maps. */
+int platform_video_window_to_game(int wx, int wy, int *gx, int *gy)
+{
+    if (!g_stretch_active || !s_win || !s_ren) return 0;
+    int ww = 1, wh = 1, ow = 1, oh = 1;
+    SDL_GetWindowSize(s_win, &ww, &wh);
+    if (SDL_GetRendererOutputSize(s_ren, &ow, &oh) != 0) { ow = ww; oh = wh; }
+    if (ww <= 0 || wh <= 0) return 0;
+    float sx = (float)wx * ow / ww, sy = (float)wy * oh / wh;
+    if (FillLayoutScreenToGame(ow, oh, sx, sy, gx, gy)) return 1;
+    SDL_Rect sc, pn;
+    stretch_rects(ow, oh, &sc, &pn);
+    int x = sc.w > 0 ? (int)((sx - sc.x) * s_fb_w / sc.w) : 0;
+    int y = sc.h > 0 ? (int)((sy - sc.y) * s_fb_h / sc.h) : 0;
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
+    if (x >= s_fb_w) x = s_fb_w - 1;
+    if (y >= s_fb_h) y = s_fb_h - 1;
+    *gx = x; *gy = y;
+    return 1;
 }
 
 void platform_video_toggle_aspect_mode(void)
@@ -228,10 +273,18 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
     wacki_overlay_draw(s_ren);
 #else
     if (g_stretch_active && s_win) {
-        int ww = w, wh = h;
-        SDL_GetWindowSize(s_win, &ww, &wh);
-        SDL_Rect dest = {0, 0, ww, wh};
-        SDL_RenderCopy(s_ren, s_tex, NULL, &dest);
+        int ow = w, oh = h;
+        if (SDL_GetRendererOutputSize(s_ren, &ow, &oh) != 0)
+            SDL_GetWindowSize(s_win, &ow, &oh);
+        SDL_Rect sc, pn;
+        if (stretch_rects(ow, oh, &sc, &pn)) {
+            SDL_Rect ss = { 0, FILL_CROP_TOP, w, 400 - FILL_CROP_TOP };
+            SDL_Rect ps = { 0, 400, w, h - 400 };
+            SDL_RenderCopy(s_ren, s_tex, &ss, &sc);
+            SDL_RenderCopy(s_ren, s_tex, &ps, &pn);
+        } else {
+            SDL_RenderCopy(s_ren, s_tex, NULL, &sc);
+        }
     } else {
         SDL_RenderCopy(s_ren, s_tex, NULL, NULL);
     }

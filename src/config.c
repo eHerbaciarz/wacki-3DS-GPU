@@ -81,7 +81,7 @@ void ConfigSave(void)
     fprintf(fp,"# Wacki display/input preferences\n");
     fprintf(fp,"fullscreen=%d\n", g_fullscreen?1:0);
     fprintf(fp,"scale=%d\n",      g_scale_factor>0?g_scale_factor:1);
-    fprintf(fp,"# aspect_mode: stretch (pelny ekran) | 4:3 (czarne pasy)\n");
+    fprintf(fp,"# aspect_mode: stretch (panorama: scena 16:9, panel jak w 4:3) | 4:3 (czarne pasy)\n");
     fprintf(fp,"aspect_mode=%s\n", g_aspect_mode[0]?g_aspect_mode:"stretch");
     fprintf(fp,"# touch_mode: absolute | relative | off\n");
     fprintf(fp,"touch_mode=%s\n",  g_touch_mode[0]?g_touch_mode:"absolute");

@@ -272,7 +272,10 @@ static void paint_held_item_ghost(void)
 void PaintHudOverlay(void)
 {
     AnimAsset *panel = g_panel_asset;
-    if (panel) paint_anim_button_at(panel, 0, 0, PANEL_TOP_Y, 1);
+    if (panel) {
+        paint_anim_button_at(panel, 0, 0, PANEL_TOP_Y, 1);
+        FillLayoutMarkGameplay();      /* util/fill_layout.c */
+    }
 
     paint_inventory_icons(panel);
     paint_actor_portraits();

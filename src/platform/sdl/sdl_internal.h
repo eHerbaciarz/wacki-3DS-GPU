@@ -20,6 +20,8 @@ void platform_video_toggle_aspect_mode(void);
 void platform_video_get_present_state(int *stretch_active,
                                       int *win_w, int *win_h,
                                       int *fb_w,  int *fb_h);
+/* "stretch" mode: window pixel → game pixel (0 = not in that mode). */
+int  platform_video_window_to_game(int wx, int wy, int *gx, int *gy);
 
 /* platform_sdl.c — touch mode cycle (absolute / relative / off).
  * g_touch_mode is defined in src/config.c (available for all targets). */

@@ -109,7 +109,7 @@ ENGINE_SRCS = \
 	src/heap.c     src/timer.c     src/stubs.c                    \
 	src/binary_data.c src/pe_loader.c src/log.c                  \
 	$(PLATFORM_MAIN_SRC) src/vm/script_obj.c src/vm/parser.c      \
-	src/util/rng.c                                               \
+	src/util/rng.c src/util/fill_layout.c                        \
 	src/hud/panel.c src/hud/inventory.c src/hud/items.c          \
 	src/scene/click_queue.c src/scene/hit_test.c src/scene/mask_list.c \
 	src/scene/navigation.c src/scene/actor_walk.c src/scene/stage.c \
@@ -126,7 +126,8 @@ ENGINE_SRCS = \
 	src/anim/paint_primitives.c src/anim/alpha_blit.c             \
 	src/menu/chapter_select.c src/menu/slot_picker.c                 \
 	src/menu/options.c        src/menu/menu_loop.c                   \
-	src/menu/main_menu.c      src/menu/port_attribution.c
+	src/menu/main_menu.c      src/menu/port_attribution.c          \
+	src/menu/controls_help.c
 
 # Shared platform building blocks referenced by mk/{desktop,miyoo,portmaster}.mk
 # (see docs/platform-hal.md). SDL_PLATFORM_SRCS = the SDL2/stdio HAL impls
@@ -243,7 +244,7 @@ TEST_ENGINE_SRCS = \
 	src/platform/sdl/save_host.c                   \
 	src/binary_data.c src/timer.c  src/vm/main.c  src/log.c \
 	src/vm/script_obj.c src/vm/parser.c          \
-	src/util/rng.c                                \
+	src/util/rng.c src/util/fill_layout.c         \
 	src/hud/panel.c src/hud/inventory.c src/hud/items.c \
 	src/scene/click_queue.c src/scene/hit_test.c src/scene/mask_list.c \
 	src/scene/navigation.c src/scene/actor_walk.c src/scene/stage.c \

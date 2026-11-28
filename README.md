@@ -163,6 +163,14 @@ ekran*, *Okno 2×* albo *Okno 1×*. Wybór jest zapamiętany (plik
 - **F11** — przełącza pełny ekran ↔ okno
 - **rozciągnij okno za róg** — płynnie zmienia powiększenie; gra
   renderuje wewnętrznie 640×480 i skaluje z zachowaniem proporcji
+- **F10** — obraz **panoramiczny** ↔ **4:3** (na Switchu przycisk **X**,
+  na Vicie **trójkąt**, na 3DS **Y**). Panorama na szerokim ekranie: scena
+  bez górnych 40 wierszy (niebo, sufity; co stamtąd zwisa, da się
+  kliknąć niżej) na całą szerokość, a panel z przedmiotami bez zmian, jak w 4:3. Filmy
+  i menu zawsze 4:3.
+
+**Menu pauzy** (`F12`, na konsolach **START** / **+**) pokazuje pod
+pytaniem, co robią przyciski na danej platformie.
 
 Żeby znów zobaczyć pytanie o tryb — skasuj `wacki.cfg`. Zaawansowani
 mogą wymusić tryb z linii poleceń (sekcja „⚙️ Opcje uruchomienia"

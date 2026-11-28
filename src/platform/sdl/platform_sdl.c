@@ -185,7 +185,11 @@ static void handle_mouse_motion(const SDL_Event *ev)
     g_mouse_x = (int16_t)ev->motion.x;
     g_mouse_y = (int16_t)ev->motion.y;
 #elif defined(WACKI_SWITCH) || defined(WACKI_VITA)
-    {
+    int gx, gy;
+    if (platform_video_window_to_game(ev->motion.x, ev->motion.y, &gx, &gy)) {
+        g_mouse_x = (int16_t)gx;
+        g_mouse_y = (int16_t)gy;
+    } else {
         int stretch = 0, win_w = s_w, win_h = s_h, fb_w = s_w, fb_h = s_h;
         platform_video_get_present_state(&stretch, &win_w, &win_h, &fb_w, &fb_h);
         if (stretch && win_w > 0 && win_h > 0) {
@@ -197,8 +201,14 @@ static void handle_mouse_motion(const SDL_Event *ev)
         }
     }
 #else
-    g_mouse_x = (int16_t)ev->motion.x;
-    g_mouse_y = (int16_t)ev->motion.y;
+    int gx, gy;
+    if (platform_video_window_to_game(ev->motion.x, ev->motion.y, &gx, &gy)) {
+        g_mouse_x = (int16_t)gx;              /* "stretch" (fill_layout.c) */
+        g_mouse_y = (int16_t)gy;
+    } else {
+        g_mouse_x = (int16_t)ev->motion.x;
+        g_mouse_y = (int16_t)ev->motion.y;
+    }
 #endif
 }
 
@@ -267,7 +277,7 @@ static void handle_finger_relative(const SDL_Event *ev)
         s_vcur_y += mvy;
         if (s_vcur_x < 0) s_vcur_x = 0;
         if (s_vcur_x >= s_w) s_vcur_x = s_w - 1;
-        if (s_vcur_y < 0) s_vcur_y = 0;
+        if (s_vcur_y < FillLayoutMinY()) s_vcur_y = FillLayoutMinY();
         if (s_vcur_y >= s_h) s_vcur_y = s_h - 1;
         s_vcur_initialized = 1;
         g_mouse_x = (int16_t)s_vcur_x;
@@ -336,7 +346,7 @@ static void poll_virtual_cursor(void)
     }
 
     if (s_vcur_x < 0) s_vcur_x = 0;
-    if (s_vcur_y < 0) s_vcur_y = 0;
+    if (s_vcur_y < FillLayoutMinY()) s_vcur_y = FillLayoutMinY();  /* cut-off rows */
     if (s_vcur_x >= s_w) s_vcur_x = s_w - 1;
     if (s_vcur_y >= s_h) s_vcur_y = s_h - 1;
 

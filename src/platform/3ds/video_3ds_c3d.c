@@ -19,9 +19,12 @@
  *   3. One textured quad per screen:
  *        top    — 4:3: the frame in a centred 320×240 window with black
  *                 bars (exact 2:1, so smoothing = a clean 2×2 average);
- *                 "stretch" = FILL: full 400 width, proportions kept,
- *                 384 of 480 rows shown, the window following the
- *                 cursor (see s_fill_y);
+ *                 "stretch" while playing: the scene without its top 40
+ *                 rows over the whole 400 width (400×200) and the panel
+ *                 as in 4:3 under it (320×40) — src/util/fill_layout.c;
+ *                 films / menus in "stretch" = FILL: full 400 width,
+ *                 proportions kept, 384 of 480 rows shown, the window
+ *                 following the cursor (see s_fill_y);
  *        bottom — the zoom view: a part of the SAME texture (1×/2×/4×
  *                 around the cursor, or the whole frame), no second copy.
  *      Stereo 3D (slider open): a second texture with the right eye's
@@ -151,7 +154,10 @@ typedef struct {
     uint8_t r, g, b, a;
 } Vtx;
 
-enum { QUAD_TOP_L = 0, QUAD_TOP_R = 1, QUAD_BOT = 2, QUAD_COUNT = 3 };
+/* QUAD_TOP_*P: the inventory panel's own quad in the "stretch" gameplay
+ * layout (util/fill_layout.c), drawn after QUAD_TOP_L / _R. */
+enum { QUAD_TOP_L = 0, QUAD_TOP_R = 1, QUAD_BOT = 2,
+       QUAD_TOP_LP = 3, QUAD_TOP_RP = 4, QUAD_COUNT = 5 };
 
 static C3D_RenderTarget *s_rt_top[2]; /* left, right eye */
 static C3D_RenderTarget *s_rt_bot;
@@ -288,7 +294,7 @@ static void set_quad(int q, float x0, float y0, float x1, float y1,
 }
 
 static void draw_on(C3D_RenderTarget *rt, int screen_w, int screen_h,
-                    C3D_Tex *tex, int quad)
+                    C3D_Tex *tex, int quad, int quad2)
 {
     /* Colour only: these targets have no depth buffer, and CLEAR_ALL
      * would also memory-fill the (NULL) depth address. */
@@ -300,6 +306,7 @@ static void draw_on(C3D_RenderTarget *rt, int screen_w, int screen_h,
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, s_u_proj, &proj);
     C3D_TexBind(0, tex);
     C3D_DrawArrays(GPU_TRIANGLE_STRIP, quad * 4, 4);
+    if (quad2 >= 0) C3D_DrawArrays(GPU_TRIANGLE_STRIP, quad2 * 4, 4);
 }
 
 static void apply_filter(int smooth)
@@ -620,7 +627,12 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
     int   fill_h     = (w * TOP_HEIGHT + TOP_WIDTH / 2) / TOP_WIDTH;   /* 384 */
     float fill_max   = (float)(h - fill_h > 0 ? h - fill_h : 0);
     int   pan_dirty  = 0;
-    if (!use_43) {
+    /* "stretch" while playing: scene + panel (util/fill_layout.c), no pan */
+    FillRects fr;
+    int   fill_game  = !use_43 && FillLayoutGet(TOP_WIDTH, TOP_HEIGHT, &fr);
+    static int s_prev_fill_game = -1;
+    if (fill_game != s_prev_fill_game) { s_prev_fill_game = fill_game; pan_dirty = 1; }
+    if (!use_43 && !fill_game) {
         float target;
         if (s_fill_y < 0.0f) s_fill_y = fill_max;
         if (g_cutscene_playing) {
@@ -722,25 +734,40 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
     float tx1 = use_43 ? (float)(TOP_43_X + TOP_43_W) : (float)TOP_WIDTH;
     float sy0 = use_43 ? 0.0f : s_fill_y;
     float sy1 = use_43 ? (float)h : s_fill_y + (float)fill_h;
-    set_quad(QUAD_TOP_L, tx0, 0.0f, tx1, (float)TOP_HEIGHT, 0.0f, sy0, (float)w, sy1);
-    set_quad(QUAD_TOP_R, tx0, 0.0f, tx1, (float)TOP_HEIGHT, 0.0f, sy0, (float)w, sy1);
+    int   panel_q    = -1;
+    if (fill_game) {
+        float sh = fr.s_h;
+        set_quad(QUAD_TOP_L, 0.0f, 0.0f, (float)TOP_WIDTH, sh,
+                 0.0f, fr.src_y, (float)w, fr.src_y + fr.src_h);
+        set_quad(QUAD_TOP_R, 0.0f, 0.0f, (float)TOP_WIDTH, sh,
+                 0.0f, fr.src_y, (float)w, fr.src_y + fr.src_h);
+        set_quad(QUAD_TOP_LP, fr.p_x, fr.p_y, fr.p_x + fr.p_w, fr.p_y + fr.p_h,
+                 0.0f, 400.0f, (float)w, (float)h);
+        set_quad(QUAD_TOP_RP, fr.p_x, fr.p_y, fr.p_x + fr.p_w, fr.p_y + fr.p_h,
+                 0.0f, 400.0f, (float)w, (float)h);
+        panel_q = QUAD_TOP_LP;
+    } else {
+        set_quad(QUAD_TOP_L, tx0, 0.0f, tx1, (float)TOP_HEIGHT, 0.0f, sy0, (float)w, sy1);
+        set_quad(QUAD_TOP_R, tx0, 0.0f, tx1, (float)TOP_HEIGHT, 0.0f, sy0, (float)w, sy1);
+    }
     set_quad(QUAD_BOT, 0.0f, 0.0f, (float)BOT_WIDTH, (float)BOT_HEIGHT,
              (float)src_x, (float)src_y,
              (float)(src_x + src_region_w), (float)(src_y + src_region_h));
     GSPGPU_FlushDataCache(s_vbuf, sizeof(Vtx) * QUAD_COUNT * 4);
 
     if (top_redraw) {
-        draw_on(s_rt_top[0], TOP_WIDTH, TOP_HEIGHT, &s_tex[0], QUAD_TOP_L);
+        draw_on(s_rt_top[0], TOP_WIDTH, TOP_HEIGHT, &s_tex[0], QUAD_TOP_L, panel_q);
         if (stereo_enabled) {
             /* Without a background snapshot this frame (menus paint and
              * present directly), both eyes get the same flat picture. */
             draw_on(s_rt_top[1], TOP_WIDTH, TOP_HEIGHT,
-                    s_have_right ? &s_tex[1] : &s_tex[0], QUAD_TOP_R);
+                    s_have_right ? &s_tex[1] : &s_tex[0], QUAD_TOP_R,
+                    panel_q >= 0 ? QUAD_TOP_RP : -1);
         }
         s_prev_disparity_px = disparity_px_now;
     }
     if (bot_dirty)
-        draw_on(s_rt_bot, BOT_WIDTH, BOT_HEIGHT, &s_tex[0], QUAD_BOT);
+        draw_on(s_rt_bot, BOT_WIDTH, BOT_HEIGHT, &s_tex[0], QUAD_BOT, -1);
 
     C3D_FrameEnd(GX_CMDLIST_FLUSH);    /* we flushed our own buffers */
     uint64_t t_end = perf_now();

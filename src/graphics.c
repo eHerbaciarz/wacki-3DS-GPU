@@ -304,8 +304,13 @@ void FlushFrameToPrimary(void)
 {
     if (g_present_suppressed) return;   /* mid-load: don't present partial frames */
     ensure_shadow();
-    if (g_back_shadow)
-        PlatformPresent(g_back_shadow, g_palette_rgb, g_screen_w, g_screen_h);
+    if (g_back_shadow) {
+        FillLayoutFrame();           /* "stretch": scene 16:9 + panel 4:3 */
+        /* pause question: the controls under it (menu/controls_help.c) */
+        PlatformPresent(ControlsHelpCompose(g_back_shadow, g_palette_rgb,
+                                            g_screen_w, g_screen_h),
+                        g_palette_rgb, g_screen_w, g_screen_h);
+    }
     s_dirty_this_count = 0;
 }
 
@@ -336,6 +341,7 @@ void FadeOutToBlack(void)
 
     for (int s = 1; s <= FADE_OUT_STEPS; ++s) {
         if (PlatformShouldQuit()) break;
+        FillLayoutKeep();            /* fade in the same layout */
         int t = (s * 256) / FADE_OUT_STEPS;                  /* 0..256 */
         for (int i = 0; i < 256; ++i) {
             int r = start[i * 3 + 0], g = start[i * 3 + 1], b = start[i * 3 + 2];

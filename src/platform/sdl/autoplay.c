@@ -13,6 +13,8 @@
  *   rclick X Y       move + right click
  *   key NAME         F1..F12, esc, enter, tab, space
  *   shot NAME        save the current frame as NAME.bmp (8-bit, palette)
+ *   sshot FILE       save the window as shown (after layout) to FILE (BMP)
+ *   winsize W H      resize the window (e.g. 1280 720 for a 16:9 screen)
  *   swap             switch character (right click)
  *   room N           jump to komnata N of the stage (tests only)
  *   diag             diagnostics on (log ring)
@@ -125,6 +127,19 @@ void AutoplayTick(void)
             extern uint32_t g_script_vars[];
             for (int i = x; i <= y; ++i)
                 if (g_script_vars[i]) LOG_INFO("autoplay", "var[0x%X]=0x%X", i, (unsigned)g_script_vars[i]);
+        } else if (!strcmp(cmd, "winsize") && sscanf(line, "%*s %d %d", &x, &y) == 2) {
+            SDL_SetWindowSize(SDL_GetWindowFromID(1), x, y);
+        } else if (!strcmp(cmd, "sshot") && sscanf(line, "%*s %63s", arg) == 1) {
+            /* the window as shown (layout, bars), not the 640x480 frame */
+            SDL_Renderer *rr = SDL_GetRenderer(SDL_GetWindowFromID(1));
+            int ow = 0, oh = 0; SDL_GetRendererOutputSize(rr, &ow, &oh);
+            SDL_Surface *ss = SDL_CreateRGBSurfaceWithFormat(0, ow, oh, 32, SDL_PIXELFORMAT_ARGB8888);
+            if (rr && ss) {
+                SDL_RenderReadPixels(rr, NULL, SDL_PIXELFORMAT_ARGB8888, ss->pixels, ss->pitch);
+                SDL_SaveBMP(ss, arg);
+            }
+            if (ss) SDL_FreeSurface(ss);
+            LOG_INFO("autoplay", "sshot %s %dx%d", arg, ow, oh);
         } else if (!strcmp(cmd, "diag")) {
             g_log_diag = 1;
         } else if (!strcmp(cmd, "mem")) {
