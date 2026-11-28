@@ -3,7 +3,7 @@ name: Switch build
 on:
   workflow_dispatch:
   push:
-    branches: [ master ]
+    branches: [ master, wacki ]
     paths:
       - 'src/**'
       - 'include/**'
