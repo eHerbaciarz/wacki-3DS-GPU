@@ -11,7 +11,7 @@ on:
       - 'mk/**'
       - 'tools/**'
       - 'assets/**'
-      - '.github/workflows/switch.yml'
+      - '.github/workflows/Switch.yml'
 
 jobs:
   build-switch:
