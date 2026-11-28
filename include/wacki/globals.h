@@ -132,7 +132,7 @@ extern int          g_fullscreen;     /* --fullscreen / F11 */
  * AVI playback — intro, death, per-stage transitions), cleared right
  * after. Platform video backends MAY use this to skip work that's
  * wasted or actively harmful during a cutscene — e.g. the 3DS backend
- * (src/platform/3ds/video_3ds_gl.c) skips its bottom-screen zoom/touch
+ * (src/platform/3ds/video_3ds_c3d.c) skips its bottom-screen zoom/touch
  * view entirely while this is set: that view exists to magnify the
  * point-and-click cursor, which isn't shown/usable during a cutscene
  * anyway, so rendering it is pure wasted per-frame cost that (per user
@@ -144,7 +144,7 @@ extern int          g_cutscene_playing;
 /* ---- stereoscopic 3D background/foreground split (3DS-only) ------ *
  *
  * EXPERIMENTAL — lives on branch 3ds-stereo3d-experiment. Lets the 3DS
- * video backend (src/platform/3ds/video_3ds_gl.c) render the top screen
+ * video backend (src/platform/3ds/video_3ds_c3d.c) render the top screen
  * with the New3DS/3DS's real autostereoscopic display: the room
  * BACKGROUND stays flat (depth 0, "on the glass"), while every other
  * painted pixel this frame — actors, held/scene items, the HUD panel,
@@ -162,7 +162,7 @@ extern int          g_cutscene_playing;
  * by diffing two snapshots of the SAME shadow buffer — no changes to
  * any blit function or call site required.
  *
- * g_stereo3d_bg_layer_wanted — written EVERY FRAME by video_3ds_gl.c,
+ * g_stereo3d_bg_layer_wanted — written EVERY FRAME by video_3ds_c3d.c,
  * from the physical 3D slider position (osGet3DSliderState() > 0).
  * Defaults to 0 and is NEVER written by any other platform, or even by
  * the 3DS backend when the slider is centered/off (including every
@@ -181,7 +181,7 @@ extern int          g_stereo3d_bg_layer_wanted;
  * frame_tick.c's repaint_scene_background() sets g_bg_layer_valid = 0,
  * then — only if g_stereo3d_bg_layer_wanted — copies the just-painted
  * (background-only) g_back_shadow into g_bg_layer_shadow and sets
- * g_bg_layer_valid = 1. video_3ds_gl.c's plat_video_present consumes
+ * g_bg_layer_valid = 1. video_3ds_c3d.c's plat_video_present consumes
  * (reads then clears) g_bg_layer_valid once per present call: if still
  * valid, it diffs g_bg_layer_shadow against the just-finished, fully
  * composited frame it was handed to build a per-pixel foreground mask

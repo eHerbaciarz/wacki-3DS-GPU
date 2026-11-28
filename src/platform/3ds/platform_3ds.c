@@ -5,7 +5,7 @@
  * (the 3DS replacement for src/platform/sdl/platform_sdl.c).
  *
  * Wires together the HAL pieces implemented elsewhere in this
- * directory (system_3ds.c, video_3ds_gl.c, gamepad_3ds.c) behind the
+ * directory (system_3ds.c, video_3ds_c3d.c, gamepad_3ds.c) behind the
  * portable Platform* API every src/*.c call site uses (wacki/api.h). */
 
 #include "wacki.h"
@@ -40,7 +40,7 @@ static int plat_should_quit(void)
  * PlatformPumpEvents below) but the cursor never moved via D-pad/stick —
  * exactly the reported symptom. Ported the same accel-ramp + analog
  * sub-pixel-remainder logic platform_sdl.c uses, driving the shared
- * g_mouse_x/g_mouse_y globals video_3ds_gl.c and the engine's own click
+ * g_mouse_x/g_mouse_y globals video_3ds_c3d.c and the engine's own click
  * hit-testing both read. */
 #define VCUR_BASE_PIXELS_PER_TICK 1
 #define VCUR_MAX_PIXELS_PER_TICK  8

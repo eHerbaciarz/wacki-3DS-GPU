@@ -8,8 +8,8 @@
  * the WAV loader chain, SDL_ShowSimpleMessageBox, SDL_getenv/setenv,
  * SDL_GetBasePath, SDL_PushEvent for the SIGINT handler, screenshot's
  * SDL_Surface/SDL_Color/SDL_SetPaletteColors/SDL_SaveBMP). None of the
- * SDL2 *rendering/window* API is used on 3DS (video_3ds_gl.c talks to
- * picaGL directly) — those symbols are NOT provided here on purpose;
+ * SDL2 *rendering/window* API is used on 3DS (video_3ds_c3d.c talks to
+ * citro3d directly) — those symbols are NOT provided here on purpose;
  * if something new starts calling them the missing-symbol error is the
  * signal to either stub it here or route it through the video HAL
  * instead.

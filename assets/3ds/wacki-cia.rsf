@@ -155,7 +155,7 @@ AccessControlInfo:
 
   # Services actually touched by this port:
   #   fs:USER   — sdmc: file I/O (data files + Wacki.sav), FSUSER_*
-  #   gsp::Gpu  — gfxInitDefault / direct-framebuffer writes (video_3ds_gl.c)
+  #   gsp::Gpu  — gfxInitDefault / citro3d GPU drawing (video_3ds_c3d.c)
   #   hid:USER  — buttons/circle-pad/touch (gamepad_3ds.c)
   #   cfg:u     — osSetSpeedupEnable / system config (system_3ds.c)
   #   ndm:u     — required alongside gsp/hid on most homebrew (network

@@ -39,12 +39,12 @@
  * gamepad/mouse code writes; there is no separate 3DS-only cursor
  * variable). Touching the bottom screen jumps the cursor straight to
  * the touched point and fires a left click, mirroring "tap where you
- * want to click" on the zoomed view video_3ds_gl.c draws there.
+ * want to click" on the zoomed view video_3ds_c3d.c draws there.
  *
  * The bottom screen shows a `zoom`-times magnified CROP around the
  * cursor, not a flat-scaled whole image — so the touch point must be
  * mapped through platform_video_touch_to_game(), which inverts the
- * exact region video_3ds_gl.c's blit_bottom_screen_zoom() drew that
+ * exact region video_3ds_c3d.c's bottom-screen quad showed that
  * frame (see its own comment for why a locally-recomputed clamp here
  * would drift out of sync with what's actually on screen).
  *
@@ -56,10 +56,10 @@
  * single frame (k = (tx - panel_center) / zoom), i.e. a runaway
  * constant-velocity drift for as long as the finger stays down off-
  * center — exactly the "przeskakuje strasznie szybko" symptom. Fixed
- * by telling video_3ds_gl.c to freeze the crop (platform_video_
+ * by telling video_3ds_c3d.c to freeze the crop (platform_video_
  * set_touch_active) for the whole duration a touch is held, only
  * letting it recenter again after release — see that function's own
- * comment in video_3ds_gl.c for the frozen-crop bookkeeping. */
+ * comment in video_3ds_c3d.c for the frozen-crop bookkeeping. */
 
 #include "wacki.h"
 #include "wacki/log.h"
@@ -80,16 +80,16 @@ static HandMode s_hand_mode = HAND_MODE_LEFT;
 
 static int s_touch_was_down = 0;
 
-/* video_3ds_gl.c: cycles the bottom-screen zoom level (X button). */
+/* video_3ds_c3d.c: cycles the bottom-screen zoom level (X button). */
 extern void platform_video_cycle_zoom(void);
-/* video_3ds_gl.c: toggles top-screen aspect ratio stretch<->4:3 (Y button). */
+/* video_3ds_c3d.c: toggles top-screen aspect ratio stretch<->4:3 (Y button). */
 extern void platform_video_toggle_aspect_mode(void);
-/* video_3ds_gl.c: inverts the exact zoom-crop region last drawn to the
+/* video_3ds_c3d.c: inverts the exact zoom-crop region last drawn to the
  * bottom screen — see this file's touch-handling comment above and
- * video_3ds_gl.c's own comment on indexed_to_rgba_zoom for why the
+ * video_3ds_c3d.c's zoom / touch state comment for why the
  * mapping can't be recomputed independently here. */
 extern void platform_video_touch_to_game(int tx, int ty, int *gx, int *gy);
-/* video_3ds_gl.c: freezes/unfreezes the zoom-crop recenter — see this
+/* video_3ds_c3d.c: freezes/unfreezes the zoom-crop recenter — see this
  * file's top comment ("TOUCH-HOLD FREEZE") for why this is needed. */
 extern void platform_video_set_touch_active(int active);
 
@@ -146,7 +146,7 @@ void platform_pad_handle_buttons(void)
     if (held & KEY_TOUCH) {
         /* Freeze the zoom crop's recenter BEFORE reading/mapping this
          * touch — platform_video_touch_to_game (called right below)
-         * must invert through the region video_3ds_gl.c is about to
+         * must invert through the region video_3ds_c3d.c is about to
          * treat as frozen for this frame, not one it might still
          * recenter afterward. */
         platform_video_set_touch_active(1);

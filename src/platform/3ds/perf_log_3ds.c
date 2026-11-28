@@ -78,7 +78,7 @@ uint64_t perf_now(void) { return svcGetSystemTick(); }
 float perf_ms(uint64_t ticks) { return (float)ticks / TICKS_PER_MS; }
 
 /* newlib's printf on devkitARM handles %f, but the rest of the 3DS port
- * avoids it (see video_3ds_gl.c) — keep to integers: x.y ms. */
+ * avoids it (the old CPU video code did too) — keep to integers: x.y ms. */
 static int fmt_ms(char *out, size_t n, uint64_t ticks)
 {
     uint32_t tenths = (uint32_t)((ticks * 10ULL + (uint64_t)(TICKS_PER_MS / 2)) /

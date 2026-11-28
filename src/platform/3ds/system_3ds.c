@@ -26,8 +26,7 @@ static void perf_log_sink(WackiLogLevel lvl, const char *tag, const char *msg)
 void plat_system_early_init(void)
 {
     /* Initialize 3DS services. gfxInitDefault() is called here, before
-     * the video backend (video_3ds_c3d.c: citro3d; or the old CPU
-     * framebuffer one, video_3ds_gl.c), because hid/fs/romfs must be up
+     * the video backend (video_3ds_c3d.c: citro3d), because hid/fs/romfs must be up
      * first. NOTE: no consoleInit() — the bottom screen is the zoom
      * view, a text console there would fight it for the framebuffer. */
     gfxInitDefault();

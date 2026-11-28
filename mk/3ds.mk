@@ -20,7 +20,7 @@ CFLAGS += -D__3DS__ -DWACKI_HANDHELD -DWACKI_3DS \
 # conflicting -O flags, the LAST one wins, so this var (originally -Os,
 # "optimize for size") was silently overriding -O2 and building the
 # ENTIRE engine — the VM interpreter, actor walking, rendering, not just
-# video_3ds_gl.c — for binary size instead of speed. That mattered on
+# the video code — for binary size instead of speed. That mattered on
 # space-constrained targets, but the 3DS loads its .3dsx from an SD card
 # with no meaningful size limit, so there's no upside to -Os here, only
 # the (measured) downside of a slower interpreter loop on top of
@@ -45,18 +45,10 @@ LDFLAGS_STATIC := -L$(DEVKITPRO)/libctru/lib \
 # -lm last since libctru's own deps all resolve within libctru itself.
 SDL_LIB := -lcitro3d -lctru -lm
 
-# Video backend:
-#   VIDEO_3DS=c3d (default) — src/platform/3ds/video_3ds_c3d.c, the GPU
-#                             (citro3d): smoothing, 4:3/stretch, stereo.
-#   VIDEO_3DS=fb            — src/platform/3ds/video_3ds_gl.c, the old
-#                             CPU nearest-neighbour framebuffer writes
-#                             (kept for comparison; same perf log).
-VIDEO_3DS ?= c3d
-ifeq ($(VIDEO_3DS),fb)
-    VIDEO_3DS_SRC := src/platform/3ds/video_3ds_gl.c
-else
-    VIDEO_3DS_SRC := src/platform/3ds/video_3ds_c3d.c
-endif
+# Video: src/platform/3ds/video_3ds_c3d.c, the GPU (citro3d) — smoothing,
+# 4:3 / panorama, stereo. The old CPU framebuffer backend (video_3ds_gl.c,
+# VIDEO_3DS=fb) is gone: the 3DS build draws with the GPU only.
+VIDEO_3DS_SRC := src/platform/3ds/video_3ds_c3d.c
 
 # Jesli data/WACKI.EXE istnieje, uzywamy embed-pe-data. W przeciwnym razie - pusty stub.
 ifeq ($(wildcard data/WACKI.EXE),)

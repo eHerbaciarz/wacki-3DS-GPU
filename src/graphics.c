@@ -31,7 +31,7 @@ uint16_t  g_screen_h_dim = WACKI_SCREEN_H;
 
 /* ---- stereo-3D background/foreground snapshot (3DS-only) --------- *
  * See wacki/globals.h for the full design rationale. Storage lives
- * here (not video_3ds_gl.c) because it's a snapshot OF g_back_shadow,
+ * here (not video_3ds_c3d.c) because it's a snapshot OF g_back_shadow,
  * the same buffer this file owns — every other platform's linker just
  * never references g_bg_layer_shadow, so it costs them nothing beyond
  * these three words of .bss (g_stereo3d_bg_layer_wanted stays 0, so

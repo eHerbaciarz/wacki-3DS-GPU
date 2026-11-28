@@ -9,8 +9,7 @@
 # picaGL is no longer needed: the GPU backend (video_3ds_c3d.c) uses
 # citro3d directly.
 #
-# Extra make arguments are passed through, e.g.:
-#   tools/build-3ds.sh VIDEO_3DS=fb     # the old CPU framebuffer backend
+# Extra make arguments are passed through to make.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

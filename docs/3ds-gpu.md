@@ -1,8 +1,9 @@
 # 3DS: rysowanie przez GPU (citro3d)
 
-Gałąź `3ds-gpu`. Nowy backend obrazu `src/platform/3ds/video_3ds_c3d.c`
-zamiast `video_3ds_gl.c` (CPU, najbliższy sąsiad, zapis prosto do
-framebuffera). Warstwa GPU oparta na `n3ds_gpu.cpp` z portu ReClaw
+Jedyny backend obrazu na 3DS: `src/platform/3ds/video_3ds_c3d.c`. Stary
+`video_3ds_gl.c` (CPU, najbliższy sąsiad, zapis prosto do framebuffera,
+opcja `VIDEO_3DS=fb`) został usunięty — 3DS rysuje tylko przez GPU.
+Warstwa GPU oparta na `n3ds_gpu.cpp` z portu ReClaw
 (Herbaciarz, GPL-3.0), przepisana do C i uproszczona: Wacki ma jedną
 klatkę 640×480 8-bit z paletą, więc nie trzeba przechwytywać wywołań SDL.
 
@@ -69,14 +70,12 @@ t=12.5s fps=30.0 ticks=30.0 frame=33.3/41.2 engine=9.1/14.0 sleep=21.0 draw=2.3/
 | `lin` / `vram` | wolna pamięć linear / VRAM w KB |
 
 Linie z `!` to ostrzeżenia i błędy (`LOG_WARN`/`LOG_ERROR` silnika, błędy
-GPU, zmiany wygładzania). Stary backend (`VIDEO_3DS=fb`) pisze ten sam log
-(`draw` = cały czas rysowania CPU, `wait`/`gpu` = 0) — do porównania.
+GPU, zmiany wygładzania).
 
 ## Budowanie
 
 ```
 tools/build-3ds.sh                  # dist/wacki.3dsx (GPU)
-tools/build-3ds.sh VIDEO_3DS=fb     # stary backend CPU, do porównania
 tools/build-3ds-cia.sh              # dist/wacki.cia z dist/wacki
 ```
 
@@ -90,9 +89,9 @@ tools/build-3ds-cia.sh              # dist/wacki.cia z dist/wacki
 - [x] Obraz nie jest odwrócony do góry nogami — był przy
       `GX_TRANSFER_FLIP_VERT(1)`; teraz domyślnie `WACKI_C3D_TEX_FLIP=0`
       (sprawdzić ponownie: obraz prosto, bez czarnego paska u góry).
-- [ ] 4:3 i wypełnienie (Y): w wypełnieniu bez zniekształceń, panel
-      widoczny, widok płynnie jedzie w górę za kursorem i wraca; filmy
-      wyśrodkowane.
+- [ ] 4:3 i panorama (Y): w grze scena bez górnych 40 wierszy na całą
+      szerokość, panel jak w 4:3 pod nią, kursor nie wchodzi w uciętą
+      górę; filmy i menu w wypełnieniu (bez zniekształceń, wyśrodkowane).
 - [ ] Dolny ekran: zoom 1×/2×/4×/cała klatka, dotyk trafia w kliknięte
       miejsce na każdym poziomie, przytrzymanie palca nie „ucieka”.
 - [ ] Wygładzanie: domyślnie włączone; pierwszy przycisk Grafiki je
@@ -104,7 +103,7 @@ tools/build-3ds-cia.sh              # dist/wacki.cia z dist/wacki
       płaskie; bez kropek/dziur w postaciach.
 - [ ] Filmy (AVI/FLIC): płynne, dźwięk w synchronizacji; dolny ekran stoi.
 - [ ] `wacki_perf.log` powstaje, linie co 0,5 s, ostrzeżenia z `!`;
-      porównać FPS/`engine`/`draw` z buildem `VIDEO_3DS=fb`.
+      FPS/`engine`/`draw` w normie.
 - [ ] Wyjście z gry (HOME → zamknij): bez zawieszenia (wątek logu się
       kończy).
 - [ ] .cia instaluje się i działa jak .3dsx.

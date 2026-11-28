@@ -4,9 +4,9 @@
  * Herbaciarz, GPL-3.0 (ReClaw: Captain Claw port, 3DS GPU layer).
  *
  * src/platform/3ds/video_3ds_c3d.c — dual-screen video HAL drawn by the
- * 3DS GPU (citro3d). Replaces video_3ds_gl.c (CPU nearest-neighbour
- * writes straight into the framebuffers), which stays in the tree and can
- * still be built with `make TARGET=3ds VIDEO_3DS=fb`.
+ * 3DS GPU (citro3d) — the only 3DS video backend. It replaced
+ * video_3ds_gl.c (CPU nearest-neighbour writes straight into the
+ * framebuffers), which has since been removed (see git history).
  *
  * PER FRAME
  *   1. The CPU turns the engine's 640×480 8-bit frame into RGB565 with a
@@ -15,7 +15,8 @@
  *   2. GX_DisplayTransfer (C3D_SyncDisplayTransfer, queued inside the
  *      frame) tiles it into a 1024×512 RGB565 texture — the GPU's DMA
  *      does the Morton tiling that made the old picaGL version slow
- *      (see video_3ds_gl.c's top comment), the CPU never touches it.
+ *      (the reason the old CPU backend wrote the framebuffers by hand), the
+ *      CPU never touches it.
  *   3. One textured quad per screen:
  *        top    — 4:3: the frame in a centred 320×240 window with black
  *                 bars (exact 2:1, so smoothing = a clean 2×2 average);
@@ -100,9 +101,9 @@
      GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB565) |                       \
      GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO))
 
-/* ---- zoom / touch state (same behaviour as video_3ds_gl.c) ----------- *
- * See video_3ds_gl.c for the full story of each of these; the GPU
- * backend keeps the exact same cycle (1× → 2× → 4× → whole frame), the
+/* ---- zoom / touch state (as in the old CPU backend) ------------------ *
+ * Kept from the removed video_3ds_gl.c (its comments are in git
+ * history): the exact same cycle (1× → 2× → 4× → whole frame), the
  * same frozen crop while a touch is held, and the same inverse mapping
  * for taps. */
 static int g_zoom_level = 0;
@@ -433,7 +434,7 @@ static void gpu_shutdown(void)
     s_c3d_up = 0;
 }
 
-/* ---- HAL entry points kept from video_3ds_gl.c ----------------------- */
+/* ---- HAL entry points (as in the old CPU backend) --------------------- */
 
 void platform_video_cycle_zoom(void)
 {
@@ -446,7 +447,7 @@ void platform_video_cycle_zoom(void)
 }
 
 /* While a touch is held the zoom crop does not follow the cursor — see
- * video_3ds_gl.c's platform_video_set_touch_active (runaway-drift fix). */
+ * gamepad_3ds.c's TOUCH-HOLD FREEZE (runaway-drift fix). */
 void platform_video_set_touch_active(int active)
 {
     s_touch_active = active;
@@ -582,7 +583,7 @@ void plat_video_present(const uint8_t *shadow, const uint8_t *pal, int w, int h)
                     g_zoom_level != s_prev_zoom_level;
 
     /* During cutscenes the bottom screen keeps its last picture (no
-     * cursor to magnify) — same as video_3ds_gl.c. */
+     * cursor to magnify) — as before. */
     if (g_cutscene_playing) bot_dirty = 0;
 
     /* ---- stereo 3D: the physical slider, read every frame ---------- */
