@@ -84,7 +84,7 @@ static const char *k_help[] = {
     "F10 - obraz: panorama / 4:3",
     "F11 - pelny ekran",
     "F5 - szybki zapis,  F9 - wczytaj",
-    "Pad: A klik, B postac, RB/LB zapis",
+    "Pad: A klik, B postac, RB zapis",
 };
 #endif
 #define HELP_N ((int)(sizeof k_help / sizeof k_help[0]))
